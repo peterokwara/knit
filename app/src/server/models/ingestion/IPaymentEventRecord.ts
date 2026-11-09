@@ -1,6 +1,9 @@
 /** The provider that supplied the event. */
 export type PaymentEventSource = 'mpesa' | 'bank'
 
+/** The source-level event kind retained during normalization. */
+export type PaymentEventKind = 'payment' | 'reversal' | 'failed' | 'bank_line' | 'stk_result' | 'other'
+
 /** The financial meaning assigned to an imported provider event. */
 export type PaymentEventClassification = 'payment' | 'reversal' | 'failed' | 'settlement' | 'fee' | 'debit' | 'unclassified'
 
@@ -34,7 +37,7 @@ export interface IPaymentEventRecord {
   /**
    * The provider event kind, retained independently from its classification.
    */
-  eventKind: 'payment' | 'reversal' | 'failed' | 'bank_line' | 'stk_result' | 'other'
+  eventKind: PaymentEventKind
 
   /**
    * Financial meaning used by later reconciliation and allocation steps.

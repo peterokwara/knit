@@ -1,5 +1,5 @@
 import type { IPaymentEventObservation } from './IPaymentEventObservation'
-import type { PaymentEventClassification, PaymentEventSource } from './IPaymentEventRecord'
+import type { PaymentEventClassification, PaymentEventKind, PaymentEventSource } from './IPaymentEventRecord'
 
 /** A persisted normalized event variant with its source evidence. */
 export interface IIngestedPaymentEvent {
@@ -26,7 +26,7 @@ export interface IIngestedPaymentEvent {
   /**
    * Provider event kind.
    */
-  eventKind: 'payment' | 'reversal' | 'failed' | 'bank_line' | 'stk_result' | 'other'
+  eventKind: PaymentEventKind
 
   /**
    * Financial meaning assigned to the event.
