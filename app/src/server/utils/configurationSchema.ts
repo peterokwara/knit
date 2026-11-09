@@ -6,7 +6,7 @@ import type { DatabaseSync } from 'node:sqlite'
  * @param createReference - Creates a temporary database for schema comparison.
  */
 export function initializeSchema(database: DatabaseSync, createReference: () => DatabaseSync): void {
-  const schema = `
+  const configurationSchema = `
     PRAGMA foreign_keys = ON;
     PRAGMA recursive_triggers = ON;
 
@@ -104,27 +104,76 @@ export function initializeSchema(database: DatabaseSync, createReference: () => 
     BEFORE DELETE ON allocation_evidence BEGIN SELECT RAISE(ABORT, 'allocation evidence is immutable'); END;
   `
 
+  const paymentSchema = `
+    CREATE TABLE payment_ingestion_events (
+      school_id TEXT NOT NULL,
+      event_key TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      source TEXT NOT NULL CHECK(source IN ('mpesa', 'bank')),
+      source_reference TEXT NOT NULL,
+      event_kind TEXT NOT NULL CHECK(event_kind IN ('payment', 'reversal', 'failed', 'bank_line')),
+      classification TEXT NOT NULL CHECK(classification IN ('payment', 'reversal', 'failed', 'settlement', 'fee', 'debit', 'unclassified')),
+      amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL CHECK(length(currency) = 3),
+      occurred_at TEXT,
+      occurred_on TEXT,
+      payment_reference TEXT,
+      related_reference TEXT,
+      issue TEXT,
+      PRIMARY KEY (school_id, event_key, fingerprint)
+    ) STRICT;
+
+    CREATE TABLE payment_ingestion_observations (
+      school_id TEXT NOT NULL,
+      event_key TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      source_file TEXT NOT NULL,
+      raw_fingerprint TEXT NOT NULL,
+      raw_json TEXT NOT NULL CHECK(json_valid(raw_json)),
+      PRIMARY KEY (school_id, event_key, fingerprint, source_file, raw_fingerprint),
+      FOREIGN KEY (school_id, event_key, fingerprint)
+        REFERENCES payment_ingestion_events(school_id, event_key, fingerprint)
+    ) STRICT;
+
+    CREATE TRIGGER payment_ingestion_events_no_update
+    BEFORE UPDATE ON payment_ingestion_events BEGIN SELECT RAISE(ABORT, 'payment ingestion events are immutable'); END;
+    CREATE TRIGGER payment_ingestion_events_no_delete
+    BEFORE DELETE ON payment_ingestion_events BEGIN SELECT RAISE(ABORT, 'payment ingestion events are immutable'); END;
+    CREATE TRIGGER payment_ingestion_observations_no_update
+    BEFORE UPDATE ON payment_ingestion_observations BEGIN SELECT RAISE(ABORT, 'payment observations are immutable'); END;
+    CREATE TRIGGER payment_ingestion_observations_no_delete
+    BEFORE DELETE ON payment_ingestion_observations BEGIN SELECT RAISE(ABORT, 'payment observations are immutable'); END;
+  `
+
   // SQLite stores canonical CREATE statements. Compare with a fresh database
   // before accepting an existing schema, rather than silently recreating guards.
   const reference = createReference()
   try {
-    reference.exec(schema)
-    const expected = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%'").all()
+    reference.exec(configurationSchema)
+    const expectedConfiguration = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
+    reference.exec(paymentSchema)
+    const expectedCurrent = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
     database.exec('PRAGMA foreign_keys = ON; PRAGMA recursive_triggers = ON; BEGIN IMMEDIATE')
     try {
       const version = database.prepare('PRAGMA user_version').get()?.user_version
-      if (version !== 0 && version !== 1) throw new Error('Unsupported configuration schema version')
-      const lookup = database.prepare('SELECT type, sql FROM sqlite_schema WHERE name = ?')
-      const actual = expected.map((item) => {
-        if (typeof item.name !== 'string') throw new Error('Invalid schema object name')
-        return lookup.get(item.name)
-      })
-      if (version === 0 && actual.every((item) => item === undefined)) {
-        database.exec(schema)
-      } else if (actual.some((item, index) => !item || item.type !== expected[index].type || item.sql !== expected[index].sql)) {
+      if (version !== 0 && version !== 1 && version !== 2) throw new Error('Unsupported configuration schema version')
+      const actual = database.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
+      const matches = (expected: typeof expectedConfiguration) => actual.length === expected.length && actual.every((item, index) =>
+        item.name === expected[index].name && item.type === expected[index].type && item.sql === expected[index].sql)
+
+      if (version === 0 && actual.length === 0) {
+        database.exec(configurationSchema)
+        database.exec(paymentSchema)
+      } else if (version === 0 && matches(expectedConfiguration)) {
+        database.exec(paymentSchema)
+      } else if (version === 1 && matches(expectedConfiguration)) {
+        database.exec(paymentSchema)
+      } else if (version === 2 && !matches(expectedCurrent)) {
+        throw new Error('Configuration schema protection mismatch; inspect the database before proceeding')
+      } else if (version === 0 || version === 1) {
         throw new Error('Configuration schema protection mismatch; inspect the database before proceeding')
       }
-      database.exec('PRAGMA user_version = 1')
+      database.exec('PRAGMA user_version = 2')
       database.exec('COMMIT')
     } catch (error) {
       database.exec('ROLLBACK')
