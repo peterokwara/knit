@@ -164,3 +164,11 @@ Control and noise depend on perspective. The school controls its allocation poli
 ## Hand-drawn sphere-of-influence diagram
 
 [`visuals/sphere-of-influence.png`](visuals/sphere-of-influence.png) is rendered from [`visuals/sphere-of-influence.mmd`](visuals/sphere-of-influence.mmd) with the statechart-art repo’s npm-based Mermaid layout and hand-drawn renderer. Each person stands beside the choice they own. Every arrow has a label, and the subtitle explains that arrow labels describe how a factor affects the fee book.
+
+## Stakeholders and what matters to them
+
+[`visuals/stakeholder-perspectives.png`](visuals/stakeholder-perspectives.png) revisits the first people map. The four illustrated people align with parent, learner/family, bursar, and school. Knit and payment providers appear as labeled organizations. Each card states the actor’s need, choice, or relevant risk; every arrow says how that perspective affects the required invoice-balance outcome. The diagram marks brief facts separately from inferred risks.
+
+The assessment says parents use an admission number or family number as a payment reference. A family can include siblings, so a payment number that matches the wrong family is a reasonable inferred concern, not a stated event. The school chooses its allocation policy, while Knit’s team edits and must protect the stored school configuration. The brief’s required outcome is that a bursar can explain the correct balance for every invoice to a parent.
+
+Editable diagram source: [`visuals/stakeholder-perspectives.mmd`](visuals/stakeholder-perspectives.mmd).
