@@ -7,7 +7,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "db:init": "tsx scripts/init-db.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "tsx --test test/*.test.ts",
+    "config:load": "tsx scripts/load-school-configurations.ts"
   },
   "repository": {
     "type": "git",

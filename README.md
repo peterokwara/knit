@@ -4,7 +4,7 @@ This repository contains work for the Knit senior/lead engineer technical assess
 
 ## Status
 
-The TanStack Start and SQLite skeleton runs locally. It does not yet import payments, calculate balances, or provide the bursar's finished screen.
+The app stores protected school configuration versions and can load the supplied school settings and approved policy change. Payment ingestion, automatic allocation, balances, and the bursar's finished screen are not implemented yet.
 
 ## Run the project locally
 
@@ -28,7 +28,15 @@ The TanStack Start and SQLite skeleton runs locally. It does not yet import paym
    pnpm db:init
    ```
 
-   You should see the SQLite version and `data/knit.sqlite` (inside `app/`). This step creates an empty database; it does not import the fixtures. Node 22 may print an experimental SQLite warning. No separate SQLite server is needed.
+   You should see the SQLite version and `data/knit.sqlite` (inside `app/`). This step creates the protected schema but does not import the fixtures. Node 22 may print an experimental SQLite warning. No separate SQLite server is needed.
+
+   To load both schools and the approved CR-118 policy change, run:
+
+   ```shell
+   pnpm config:load
+   ```
+
+   Running this command again checks the existing versions against the fixtures; it does not overwrite them. It does not import payments.
 
 4. Start the application:
 
@@ -48,6 +56,7 @@ From the `app/` folder, run:
 pnpm lint
 pnpm build
 pnpm typecheck
+pnpm test
 ```
 
 The lint command checks code and JSDoc comments. The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`. See [CONTRIBUTING.md](./CONTRIBUTING.md#jsdoc-comments) for the documentation convention.
@@ -56,9 +65,13 @@ The lint command checks code and JSDoc comments. The build generates the TanStac
 
 - `app/src/routes/` contains the React pages and server routes.
 - `app/src/server/db/` contains the server-only SQLite connection.
+- `app/src/server/models/` defines the data and storage interfaces used by services.
+- `app/src/server/services/` contains configuration, allocation-evidence, and SQLite services.
+- `app/src/server/utils/` contains schema guards and validation helpers.
 - `app/scripts/` contains local setup commands.
+- `app/test/` contains the configuration safety checks.
 - `app/data/` holds the local database, which Git ignores.
-- `fixtures/` holds the assessment's example data when available locally.
+- `fixtures/` holds the assessment's example data.
 - `docs/NOTES.md` holds problem-solving notes; `docs/visuals/` holds diagrams and their drawing source.
 
 ## Contributing
@@ -69,7 +82,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the working and commit conventions 
 
 - [Problem-solving notes](./docs/NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
 - [Visuals](./docs/visuals/) contain the problem-framing diagrams and their drawing source.
-- `fixtures/` contains the assessment's example data when available locally.
+- [Configuration design](./docs/configuration.md) explains the policy history and its limits.
+- `fixtures/` contains the assessment's example data.
 
 ## License
 
