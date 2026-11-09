@@ -2,7 +2,11 @@ import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-// This module belongs on the server: SQLite and the filesystem are not available in the browser.
+/**
+ * Open the local SQLite database with foreign-key enforcement enabled.
+ * The caller must close the connection when finished.
+ * @returns An open connection to the local database.
+ */
 export function openDatabase() {
   const directory = path.resolve(process.cwd(), 'data')
   mkdirSync(directory, { recursive: true })

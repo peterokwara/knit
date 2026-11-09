@@ -30,7 +30,24 @@ git switch -c fix/2_Duplicate_Callback
 
 ## Checks
 
-Run the relevant checks from the `app/` folder. The README documents setup, build, and type-checking commands. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
+Run the relevant checks from the `app/` folder. The README documents setup, lint, build, and type-checking commands. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
+
+## JSDoc comments
+
+Document exported functions and classes with a `/** ... */` comment. Describe what the code does and any important conditions or side effects. ESLint checks the description and requires `@param` and `@returns` descriptions where applicable. Keep types in TypeScript rather than repeating them in the comment.
+
+```ts
+/**
+ * Format a family identifier for display.
+ * @param familyId - The family identifier to display.
+ * @returns A label containing the identifier.
+ */
+export function formatFamilyLabel(familyId: string): string {
+  return `Family ${familyId}`
+}
+```
+
+The generated `src/routeTree.gen.ts` file is excluded from linting. Local, unexported helpers do not need a JSDoc comment just to satisfy this rule; add one when it helps explain a non-obvious decision. Run `npm run lint` from `app/` before committing.
 
 ## Creating a pull request
 

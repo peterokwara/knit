@@ -45,11 +45,12 @@ Leave the terminal open while using the application. Press **Ctrl+C** in that te
 From the `app/` folder, run:
 
 ```shell
+npm run lint
 npm run build
 npm run typecheck
 ```
 
-The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`.
+The lint command checks code and JSDoc comments. The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`. See [CONTRIBUTING.md](./CONTRIBUTING.md#jsdoc-comments) for the documentation convention.
 
 ## Project folders
 
