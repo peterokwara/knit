@@ -1,0 +1,9 @@
+# Payment ingestion
+
+`PaymentIngestionService.importFiles(...)` parses provider files before writing anything, then saves all normalized events and source observations in one transaction. Replaying the same files is safe. Stable provider references identify events; a changed financial payload under the same reference is retained as a conflict instead of overwriting prior evidence. Non-financial callback changes, such as M-Pesa's account-balance snapshot, create additional observations without creating another payment.
+
+M-Pesa amounts are stored in KES minor units. M-Pesa transaction times are converted from the school's local time zone. A reversal links to its original transaction even when it arrives first; the event read model keeps reversals out of payment totals. If linked reversals exceed the original payment, the records are held for review. Failed STK requests have no payment amount.
+
+Bank amounts are parsed without floating point. The importer recognizes common header aliases, reordered columns, and either separate debit/credit columns or a single amount with an explicit direction. It rejects unknown layouts before writing the batch. Overlapping statement rows with the same account and bank reference become one event with evidence from both exports. Fees, M-Pesa settlement deposits, failed requests, conflicted records, and unclassified credits remain visible with zero net amount. Credits without a recognizable admission or family reference stay unclassified for review. Currency and parent-entered references remain attached to each transfer; the importer does not guess a corrected reference or convert foreign currency.
+
+This stage records provider events; it does not match a payment to a family, allocate money to invoices, or calculate balances. Run `pnpm payments:load` from `app/` to import the supplied fixtures into the local SQLite database. The command is safe to rerun.

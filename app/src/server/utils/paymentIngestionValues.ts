@@ -26,14 +26,16 @@ export function fingerprint(value: unknown): string {
 }
 
 /**
- * Parse a positive decimal currency amount into minor units without floats.
+ * Parse a non-negative decimal currency amount into minor units without floats.
  * @param value The provider amount.
  * @param label The field name used in validation errors.
  * @returns The amount in minor currency units.
  */
 export function parseAmountMinor(value: unknown, label: string): number {
   if (typeof value !== 'string' && typeof value !== 'number') throw new Error(`${label} must be a decimal amount`)
-  const text = String(value).trim().replaceAll(',', '')
+  const source = String(value).trim()
+  if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(source)) throw new Error(`${label} is not a non-negative amount with at most two decimal places`)
+  const text = source.replaceAll(',', '')
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text)
   if (!match) throw new Error(`${label} is not a non-negative amount with at most two decimal places`)
   const minor = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'))

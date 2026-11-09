@@ -1,7 +1,7 @@
-import path from 'node:path'
 import type { IPaymentIngestionContext } from '../models/ingestion/IPaymentIngestionContext'
 import type { IPaymentEventRecord } from '../models/ingestion/IPaymentEventRecord'
-import { fingerprint, parseAmountMinor, parseLocalTransactionTime, stableJson } from './paymentIngestionValues'
+import { fingerprint, parseAmountMinor, parseLocalTransactionTime } from './paymentIngestionValues'
+import { makePaymentEventRecord } from './paymentEventFactory'
 
 type JsonObject = Record<string, unknown>
 
@@ -19,37 +19,6 @@ function optionalText(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null
   const text = String(value).trim()
   return text.length ? text : null
-}
-
-function makeRecord(
-  context: IPaymentIngestionContext,
-  fileName: string,
-  raw: JsonObject,
-  event: Omit<IPaymentEventRecord, 'schoolId' | 'fingerprint' | 'sourceFile' | 'rawFingerprint' | 'rawJson'>,
-): IPaymentEventRecord {
-  const normalized = {
-    eventKey: event.eventKey,
-    source: event.source,
-    sourceReference: event.sourceReference,
-    eventKind: event.eventKind,
-    classification: event.classification,
-    amountMinor: event.amountMinor,
-    currency: event.currency,
-    occurredAt: event.occurredAt,
-    occurredOn: event.occurredOn,
-    paymentReference: event.paymentReference,
-    relatedReference: event.relatedReference,
-    issue: event.issue,
-  }
-  const rawJson = stableJson(raw)
-  return {
-    ...event,
-    schoolId: context.schoolId,
-    fingerprint: fingerprint(normalized),
-    sourceFile: path.basename(fileName),
-    rawFingerprint: fingerprint(raw),
-    rawJson,
-  }
 }
 
 /**
@@ -72,10 +41,12 @@ export function adaptMpesaEvents(contents: string, fileName: string, context: IP
       const sourceReference = requiredText(payload.TransID, 'TransID')
       const paybill = requiredText(payload.BusinessShortCode, 'BusinessShortCode')
       if (paybill !== context.mpesaPaybill) throw new Error(`M-Pesa paybill ${paybill} does not belong to ${context.schoolId}`)
-      return makeRecord(context, fileName, raw, {
+      const amountMinor = parseAmountMinor(payload.TransAmount, 'TransAmount')
+      if (amountMinor <= 0) throw new Error('TransAmount must be greater than zero')
+      return makePaymentEventRecord(context, fileName, raw, {
         eventKey: `mpesa:c2b:${sourceReference}`,
         source: 'mpesa', sourceReference, eventKind: 'payment', classification: 'payment',
-        amountMinor: parseAmountMinor(payload.TransAmount, 'TransAmount'), currency: 'KES',
+        amountMinor, currency: 'KES',
         occurredAt: parseLocalTransactionTime(payload.TransTime, context.timeZone), occurredOn: null,
         paymentReference: optionalText(payload.BillRefNumber), relatedReference: null, issue: null,
       })
@@ -84,7 +55,8 @@ export function adaptMpesaEvents(contents: string, fileName: string, context: IP
     if (eventName === 'reversal') {
       const sourceReference = requiredText(payload.TransID, 'reversal TransID')
       const amountMinor = parseAmountMinor(payload.TransAmount, 'reversal TransAmount')
-      return makeRecord(context, fileName, raw, {
+      if (amountMinor <= 0) throw new Error('reversal TransAmount must be greater than zero')
+      return makePaymentEventRecord(context, fileName, raw, {
         eventKey: `mpesa:reversal:${sourceReference}`,
         source: 'mpesa', sourceReference, eventKind: 'reversal', classification: 'reversal',
         amountMinor: -amountMinor, currency: 'KES',
@@ -97,8 +69,10 @@ export function adaptMpesaEvents(contents: string, fileName: string, context: IP
       const sourceReference = requiredText(payload.CheckoutRequestID, 'CheckoutRequestID')
       const resultCode = payload.ResultCode
       if (typeof resultCode !== 'number' && typeof resultCode !== 'string') throw new Error('ResultCode must be a number or numeric string')
-      const failed = Number(resultCode) !== 0
-      return makeRecord(context, fileName, raw, {
+      const numericResultCode = Number(resultCode)
+      if (!Number.isSafeInteger(numericResultCode)) throw new Error('ResultCode must be an integer')
+      const failed = numericResultCode !== 0
+      return makePaymentEventRecord(context, fileName, raw, {
         eventKey: `mpesa:stk:${sourceReference}`,
         source: 'mpesa', sourceReference, eventKind: 'stk_result', classification: failed ? 'failed' : 'unclassified',
         amountMinor: 0, currency: 'KES', occurredAt: null, occurredOn: null,
@@ -108,7 +82,7 @@ export function adaptMpesaEvents(contents: string, fileName: string, context: IP
     }
 
     const sourceReference = optionalText(payload.TransID) ?? optionalText(payload.CheckoutRequestID) ?? fingerprint(raw)
-    return makeRecord(context, fileName, raw, {
+    return makePaymentEventRecord(context, fileName, raw, {
       eventKey: `mpesa:other:${sourceReference}`,
       source: 'mpesa', sourceReference, eventKind: 'other', classification: 'unclassified',
       amountMinor: 0, currency: 'KES', occurredAt: null, occurredOn: null,

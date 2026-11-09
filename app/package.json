@@ -9,7 +9,8 @@
     "db:init": "tsx scripts/init-db.ts",
     "lint": "eslint .",
     "test": "tsx --test test/*.test.ts",
-    "config:load": "tsx scripts/load-school-configurations.ts"
+    "config:load": "tsx scripts/load-school-configurations.ts",
+    "payments:load": "tsx scripts/load-payment-events.ts"
   },
   "repository": {
     "type": "git",

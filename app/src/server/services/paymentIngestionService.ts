@@ -2,6 +2,7 @@ import type { IIngestedPaymentEvent } from '../models/ingestion/IIngestedPayment
 import type { IPaymentIngestionContext } from '../models/ingestion/IPaymentIngestionContext'
 import type { IPaymentIngestionFile } from '../models/ingestion/IPaymentIngestionFile'
 import type { IPaymentIngestionStore } from '../models/ingestion/IPaymentIngestionStore'
+import { adaptBankStatement } from '../utils/bankStatementAdapter'
 import { adaptMpesaEvents } from '../utils/mpesaEventAdapter'
 import type { IPaymentEventRecord } from '../models/ingestion/IPaymentEventRecord'
 
@@ -32,15 +33,16 @@ export class PaymentIngestionService {
    * @param files - Provider export files to import.
    */
   importFiles(files: IPaymentIngestionFile[]): void {
-    for (const [name, value] of Object.entries({ schoolId: this._context.schoolId, timeZone: this._context.timeZone, mpesaPaybill: this._context.mpesaPaybill })) {
-      if (value.trim() === '') throw new Error(`${name} must be non-empty text`)
-    }
+    if (this._context.schoolId.trim() === '') throw new Error('schoolId must be non-empty text')
+    if (this._context.timeZone.trim() === '') throw new Error('timeZone must be non-empty text')
+    if (this._context.mpesaPaybill.trim() === '') throw new Error('mpesaPaybill must be non-empty text')
     if (files.length === 0) throw new Error('At least one payment file is required')
     const records: IPaymentEventRecord[] = []
     for (const file of files) {
       if (!file.fileName.trim()) throw new Error('fileName must be non-empty text')
       if (file.fileType === 'mpesa-json') records.push(...adaptMpesaEvents(file.contents, file.fileName, this._context))
-      else throw new Error(`Bank CSV ingestion is not available for ${file.fileName}`)
+      else if (file.fileType === 'bank-csv') records.push(...adaptBankStatement(file.contents, file.fileName, this._context))
+      else throw new Error(`Unsupported payment file type for ${file.fileName}`)
     }
     this._store.saveEvents(records)
   }

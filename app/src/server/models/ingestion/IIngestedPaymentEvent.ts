@@ -39,6 +39,11 @@ export interface IIngestedPaymentEvent {
   amountMinor: number
 
   /**
+   * Amount eligible for payment totals after linked reversals. Held events return zero.
+   */
+  netAmountMinor: number
+
+  /**
    * Three-letter ISO currency code.
    */
   currency: string
@@ -72,6 +77,11 @@ export interface IIngestedPaymentEvent {
    * True when the same event identity has conflicting financial variants.
    */
   conflicted: boolean
+
+  /**
+   * How reversals relate to this event.
+   */
+  reversalStatus: 'not_reversal' | 'matched' | 'unmatched' | 'conflicted'
 
   /**
    * Original provider observations retained for this variant.

@@ -28,4 +28,22 @@ void describe('payment ingestion schema', () => {
       database.close()
     }
   })
+
+  void it('refuses to migrate when an existing configuration guard is missing', () => {
+    const database = new DatabaseSync(':memory:')
+    initializeSchema(database, createReference)
+    database.exec(`
+      DROP TABLE payment_ingestion_observations;
+      DROP TABLE payment_ingestion_events;
+      PRAGMA user_version = 1;
+      DROP TRIGGER school_configuration_versions_no_update;
+    `)
+    try {
+      assert.throws(() => initializeSchema(database, createReference), /Configuration schema protection mismatch/)
+      assert.equal(database.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table' AND name = 'payment_ingestion_events'").get()?.count, 0)
+      assert.equal(database.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'trigger' AND name = 'school_configuration_versions_no_update'").get()?.count, 0)
+    } finally {
+      database.close()
+    }
+  })
 })

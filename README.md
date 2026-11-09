@@ -4,7 +4,7 @@ This repository contains work for the Knit senior/lead engineer technical assess
 
 ## Status
 
-The app stores protected school configuration versions and can load the supplied school settings and approved policy change. Payment ingestion, automatic allocation, balances, and the bursar's finished screen are not implemented yet.
+The app stores protected school configuration versions and ingests the supplied M-Pesa callbacks and bank exports. Automatic allocation, explainable invoice balances, and the bursar's finished screen are not implemented yet.
 
 ## Run the project locally
 
@@ -36,7 +36,15 @@ The app stores protected school configuration versions and can load the supplied
    pnpm config:load
    ```
 
-   Running this command again checks the existing versions against the fixtures; it does not overwrite them. It does not import payments.
+   Running this command again checks the existing versions against the fixtures; it does not overwrite them.
+
+   To import M-Pesa and bank payment events, run:
+
+   ```shell
+   pnpm payments:load
+   ```
+
+   This command is safe to rerun. It preserves provider evidence and does not allocate payments to families or invoices.
 
 4. Start the application:
 
@@ -64,12 +72,11 @@ The lint command checks code and JSDoc comments. The build generates the TanStac
 ## Project folders
 
 - `app/src/routes/` contains the React pages and server routes.
-- `app/src/server/db/` contains the server-only SQLite connection.
-- `app/src/server/models/` defines the data and storage interfaces used by services.
-- `app/src/server/services/` contains configuration, allocation-evidence, and SQLite services.
-- `app/src/server/utils/` contains schema guards and validation helpers.
+- `app/src/server/models/` defines configuration, allocation-evidence, and ingestion data contracts.
+- `app/src/server/services/` contains configuration, payment-ingestion, and SQLite services.
+- `app/src/server/utils/` contains the SQLite helper, schema guards, and provider adapters.
 - `app/scripts/` contains local setup commands.
-- `app/test/` contains the configuration safety checks.
+- `app/test/` contains configuration safety and payment-ingestion checks.
 - `app/data/` holds the local database, which Git ignores.
 - `fixtures/` holds the assessment's example data.
 - `docs/NOTES.md` holds problem-solving notes; `docs/visuals/` holds diagrams and their drawing source.
@@ -83,6 +90,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the working and commit conventions 
 - [Problem-solving notes](./docs/NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
 - [Visuals](./docs/visuals/) contain the problem-framing diagrams and their drawing source.
 - [Configuration design](./docs/configuration.md) explains the policy history and its limits.
+- [Payment ingestion](./docs/payment-ingestion.md) explains replay safety, event evidence, and current limits.
 - `fixtures/` contains the assessment's example data.
 
 ## License

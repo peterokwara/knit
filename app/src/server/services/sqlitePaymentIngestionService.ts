@@ -81,11 +81,49 @@ export class SqlitePaymentIngestionService implements IPaymentIngestionStore {
       observationsByVariant.set(key, items)
     }
 
-    return SqliteHelper.query(this._database, `SELECT event.*,
+    const events = SqliteHelper.query(this._database, `SELECT event.*,
         COUNT(*) OVER (PARTITION BY event.school_id, event.event_key) AS variant_count
       FROM payment_ingestion_events event
       WHERE school_id = ? ORDER BY event_key, fingerprint`, schoolId)
       .map((row) => this.toEvent(row, observationsByVariant))
+
+    const paymentKeys = new Set(events
+      .filter((event) => !event.conflicted && event.classification === 'payment')
+      .map((event) => `${event.source}\u001f${event.sourceReference}`))
+    const paymentAmounts = new Map(events
+      .filter((event) => !event.conflicted && event.classification === 'payment')
+      .map((event) => [`${event.source}\u001f${event.sourceReference}`, event.amountMinor]))
+    const reversedAmounts = new Map<string, number>()
+    for (const event of events) {
+      if (event.conflicted || event.classification !== 'reversal' || !event.relatedReference) continue
+      const paymentKey = `${event.source}\u001f${event.relatedReference}`
+      if (!paymentKeys.has(paymentKey)) continue
+      reversedAmounts.set(paymentKey, (reversedAmounts.get(paymentKey) ?? 0) + Math.abs(event.amountMinor))
+    }
+    const overReversed = new Set([...reversedAmounts]
+      .filter(([paymentKey, reversedAmount]) => reversedAmount > (paymentAmounts.get(paymentKey) ?? 0))
+      .map(([paymentKey]) => paymentKey))
+
+    return events.map((event) => {
+      if (event.classification === 'reversal') {
+        const paymentKey = `${event.source}\u001f${event.relatedReference ?? ''}`
+        const reversalStatus = event.conflicted || overReversed.has(paymentKey) ? 'conflicted' : paymentKeys.has(paymentKey) ? 'matched' : 'unmatched'
+        const issue = overReversed.has(paymentKey) ? 'Matched reversals exceed the original payment amount; held for review.' : event.issue
+        return { ...event, netAmountMinor: 0, reversalStatus, issue }
+      }
+      if (event.classification !== 'payment' || event.conflicted) {
+        return { ...event, netAmountMinor: 0, reversalStatus: event.conflicted ? 'conflicted' : 'not_reversal' }
+      }
+      const paymentKey = `${event.source}\u001f${event.sourceReference}`
+      const reversedAmount = reversedAmounts.get(paymentKey) ?? 0
+      if (overReversed.has(paymentKey)) {
+        return {
+          ...event, netAmountMinor: 0, reversalStatus: 'conflicted',
+          issue: 'Matched reversals exceed the original payment amount; held for review.',
+        }
+      }
+      return { ...event, netAmountMinor: event.amountMinor - reversedAmount, reversalStatus: reversedAmount > 0 ? 'matched' : 'not_reversal' }
+    })
   }
 
   /**
@@ -103,9 +141,10 @@ export class SqlitePaymentIngestionService implements IPaymentIngestionStore {
       schoolId: readText(row, 'school_id'), eventKey, source: paymentSource(readText(row, 'source')),
       sourceReference: readText(row, 'source_reference'), eventKind: eventKind as IIngestedPaymentEvent['eventKind'],
       classification: eventClassification(readText(row, 'classification')), amountMinor: readInteger(row, 'amount_minor'),
+      netAmountMinor: readInteger(row, 'amount_minor'),
       currency: readText(row, 'currency'), occurredAt: nullableText(row, 'occurred_at'), occurredOn: nullableText(row, 'occurred_on'),
       paymentReference: nullableText(row, 'payment_reference'), relatedReference: nullableText(row, 'related_reference'),
-      issue: nullableText(row, 'issue'), conflicted: readInteger(row, 'variant_count') > 1,
+      issue: nullableText(row, 'issue'), conflicted: readInteger(row, 'variant_count') > 1, reversalStatus: 'not_reversal',
       observations: observationsByVariant.get(`${eventKey}\u001f${fingerprint}`) ?? [],
     }
   }
