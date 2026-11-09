@@ -197,14 +197,13 @@ These observations come from the local fixtures. Proposed handling is a starting
 
 Scores use a relative 1–5 scale: impact 5 means a direct effect on correct, explainable balances or a required submission item; effort 5 means the largest implementation cost. The sequence also respects dependencies, so a backend prerequisite can come before a similarly scored screen task.
 
-Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, policy-based allocation, and explainable family invoice balances are complete at the service level. A matched payment is allocated under the effective school policy; the immutable plan records invoice evidence, remainder treatment, and policy version. The balance service returns every supplied family invoice with paid and outstanding amounts and its allocation trail. The services are not yet connected to the fixture-loading command or bursar screen, and the system still needs durable human resolutions.
+Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, policy-based allocation, explainable family invoice balances, and the fixture-to-balance service flow are complete. `PaymentReconciliationService` connects the existing services while keeping file retrieval separate. It leaves held and zero-net payments out of allocation and returns every configured family's invoice balances with saved source and policy evidence. The system still needs durable human resolutions and a bursar screen.
 
 | Rank | Remaining task | Impact | Effort | Why it ranks here and completion evidence |
 |---|---|---:|---:|---|
-| 1 | Connect ingestion, matching, allocation, and family-balance reads for the supplied fixtures. | 5 | 3 | The public services exist, but the local fixture-loading flow does not yet allocate payments or return a family balance. Demonstrate stable balances after replay. |
-| 2 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
-| 3 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
-| 4 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
-| 5 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
+| 1 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
+| 2 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
+| 3 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
+| 4 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
 
-The next coding slice is rank 1: connect the existing ingestion, matching, allocation, and balance services for the supplied fixtures, then verify the resulting family balances remain stable on replay.
+The next coding slice is rank 1: add an idempotent bursar resolution path for payments held for review.

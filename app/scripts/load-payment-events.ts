@@ -3,10 +3,17 @@ import path from "node:path";
 import type { IPaymentFileReference } from "../src/server/models/ingestion/IPaymentFileReference";
 import type { IPaymentIngestionContext } from "../src/server/models/ingestion/IPaymentIngestionContext";
 import type { IPaymentFamilyMatchingContext } from "../src/server/models/ingestion/IPaymentFamilyMatchingContext";
+import type { IAllocationInvoice } from "../src/server/models/allocation/IAllocationInvoice";
+import { FamilyInvoiceBalanceService } from "../src/server/services/familyInvoiceBalanceService";
+import { PaymentAllocationService } from "../src/server/services/paymentAllocationService";
 import { PaymentFileRetrievalService } from "../src/server/services/paymentFileRetrievalService";
 import { PaymentFamilyMatchingService } from "../src/server/services/paymentFamilyMatchingService";
 import { PaymentIngestionService } from "../src/server/services/paymentIngestionService";
+import { PaymentReconciliationService } from "../src/server/services/paymentReconciliationService";
+import { SchoolConfigurationService } from "../src/server/services/schoolConfigurationService";
+import { SqlitePaymentAllocationPlanStore } from "../src/server/services/sqlitePaymentAllocationPlanStore";
 import { SqlitePaymentIngestionService } from "../src/server/services/sqlitePaymentIngestionService";
+import { SqliteSchoolConfigurationService } from "../src/server/services/sqliteSchoolConfigurationService";
 import { SqliteHelper } from "../src/server/utils/sqliteHelper";
 
 interface ISchoolFixture {
@@ -21,6 +28,14 @@ interface ISchoolFixture {
     family_id: string;
     family_ref: string;
     learners: { admission_no: string }[];
+  }[];
+  invoices: {
+    invoice_id: string;
+    family_id: string;
+    category: string;
+    amount_minor: number;
+    currency: string;
+    due_on: string;
   }[];
 }
 
@@ -49,6 +64,17 @@ const matchingContext: IPaymentFamilyMatchingContext = {
     admissionNumbers: family.learners.map((learner) => learner.admission_no),
   })),
 };
+const invoices: IAllocationInvoice[] = schoolFixture.invoices.map(
+  (invoice) => ({
+    schoolId: schoolFixture.school.school_id,
+    familyId: invoice.family_id,
+    invoiceId: invoice.invoice_id,
+    category: invoice.category,
+    amountMinor: invoice.amount_minor,
+    currency: invoice.currency,
+    dueOn: invoice.due_on,
+  }),
+);
 const fileReferences: IPaymentFileReference[] = [
   {
     fileName: "mpesa_events.json",
@@ -66,26 +92,61 @@ const fileReferences: IPaymentFileReference[] = [
 
 const database = SqliteHelper.openConnection();
 try {
-  const service = new PaymentIngestionService(
-    new SqlitePaymentIngestionService(database),
-    context,
+  const planStore = new SqlitePaymentAllocationPlanStore(database);
+  const configurations = new SchoolConfigurationService(
+    new SqliteSchoolConfigurationService(database),
+  );
+  const service = new PaymentReconciliationService(
+    new PaymentIngestionService(
+      new SqlitePaymentIngestionService(database),
+      context,
+    ),
+    new PaymentFamilyMatchingService(matchingContext),
+    new PaymentAllocationService(configurations, planStore),
+    new FamilyInvoiceBalanceService(planStore),
+    { matching: matchingContext, invoices },
   );
   const files = new PaymentFileRetrievalService().retrieveFiles(fileReferences);
-  service.importFiles(files);
-  const events = service.getEvents();
-  const matches = new PaymentFamilyMatchingService(
-    matchingContext,
-  ).matchPayments(events);
-  const matchedCount = matches.filter(
+  const reconciliation = service.processFiles(files, new Date().toISOString());
+  const matchedCount = reconciliation.matches.filter(
     (match) => match.status === "matched",
   ).length;
-  const heldCount = matches.filter((match) => match.status === "held").length;
+  const heldCount = reconciliation.matches.filter(
+    (match) => match.status === "held",
+  ).length;
+  const conflictCount = reconciliation.matches.filter(
+    (match) => match.holdReason === "event_conflict",
+  ).length;
   console.log(
-    `Stored ${events.length} payment event variants for ${context.schoolId}; ${events.filter((event) => event.conflicted).length} are conflicted.`,
+    `Stored ${reconciliation.eventCount} payment event variants for ${context.schoolId}; ${conflictCount} matching decisions are conflicted.`,
   );
   console.log(
-    `Matched ${matchedCount} payments to a family; ${heldCount} are held for review.`,
+    `Matched ${matchedCount} payments to a family; allocated ${reconciliation.allocatedPaymentCount}; ${heldCount} are held for review.`,
   );
+  for (const family of reconciliation.familyBalances) {
+    console.log(`\n${family.familyReference} (${family.familyId})`);
+    for (const invoice of family.invoices) {
+      console.log(
+        `  ${invoice.invoiceId}: due ${invoice.amountMinor} ${invoice.currency} minor units, paid ${invoice.paidMinor}, balance ${invoice.balanceMinor}`,
+      );
+      for (const evidence of invoice.allocations) {
+        console.log(
+          `    ${evidence.source} payment ${evidence.paymentId}: ${evidence.amountMinor}; policy v${evidence.policyVersion}; applied ${evidence.effectiveAt}`,
+        );
+      }
+    }
+  }
+  const held = reconciliation.matches.filter(
+    (match) => match.status === "held",
+  );
+  if (held.length > 0) {
+    console.log("\nHeld for review:");
+    for (const match of held) {
+      console.log(
+        `  ${match.sourceReference} (${match.currency}): ${match.holdReason}`,
+      );
+    }
+  }
 } finally {
   SqliteHelper.closeConnection(database);
 }
