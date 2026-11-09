@@ -228,4 +228,31 @@ void describe("family invoice balances", () => {
       database.close();
     }
   });
+
+  void it("rejects evidence for an invoice ID stored under a different family", () => {
+    const { database, allocation, balances } = setup();
+    try {
+      const event = payment("family-collision-payment", 100_000);
+      allocation.allocatePayment(
+        event,
+        match(event),
+        familyInvoices,
+        "2026-11-03T09:00:00+03:00",
+      );
+      const invoiceClaimedByAnotherFamily = {
+        ...familyInvoices[0],
+        familyId: "fam_202",
+      };
+
+      assert.throws(
+        () =>
+          balances.getFamilyBalances("sch_mlima", "fam_202", [
+            invoiceClaimedByAnotherFamily,
+          ]),
+        /belongs to another family/,
+      );
+    } finally {
+      database.close();
+    }
+  });
 });

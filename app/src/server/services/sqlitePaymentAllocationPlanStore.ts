@@ -112,13 +112,14 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
       LEFT JOIN payment_allocation_plans plan
         ON plan.school_id = evidence.school_id AND plan.payment_id = evidence.payment_id
       WHERE evidence.school_id = ? AND evidence.invoice_id IN (${placeholders})
-        AND plan.payment_id IS NULL LIMIT 1`,
+        AND (plan.payment_id IS NULL OR plan.family_id != ?) LIMIT 1`,
       schoolId,
       ...invoiceIds,
+      familyId,
     );
     if (orphan)
       throw new Error(
-        "Invoice has allocation evidence without a saved family plan; its balance cannot be attributed safely",
+        "Invoice allocation evidence is missing its family plan or belongs to another family; its balance cannot be attributed safely",
       );
     return SqliteHelper.query(
       this._database,
