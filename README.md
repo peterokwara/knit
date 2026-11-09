@@ -4,7 +4,7 @@ This repository contains work for the Knit senior/lead engineer technical assess
 
 ## Status
 
-The app stores protected school configuration versions, ingests the supplied M-Pesa callbacks and bank exports, derives exact family matches, allocates confirmed payments under the effective school policy, and reports evidence-backed invoice balances. Allocation plans preserve invoice lines, remainder treatment, and the policy version effective at the trusted allocation time. Uncertain references stay held for review. The bursar's finished screen is not implemented.
+The app stores protected school configuration versions, ingests the supplied M-Pesa callbacks and bank exports, derives exact family matches, allocates confirmed payments under the effective school policy, and reports evidence-backed invoice balances. Allocation plans preserve invoice lines, remainder treatment, and the policy version effective at the trusted allocation time. A bursar can resolve eligible held references through an immutable, idempotent audit decision. The bursar's finished screen is not implemented.
 
 ## Run the project locally
 

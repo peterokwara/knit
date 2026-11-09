@@ -17,6 +17,7 @@ import { PaymentReconciliationService } from "../src/server/services/paymentReco
 import { SchoolConfigurationService } from "../src/server/services/schoolConfigurationService";
 import { SqlitePaymentAllocationPlanStore } from "../src/server/services/sqlitePaymentAllocationPlanStore";
 import { SqlitePaymentIngestionService } from "../src/server/services/sqlitePaymentIngestionService";
+import { SqlitePaymentReviewResolutionStore } from "../src/server/services/sqlitePaymentReviewResolutionStore";
 import { SqliteSchoolConfigurationService } from "../src/server/services/sqliteSchoolConfigurationService";
 import { initializeSchema } from "../src/server/utils/configurationSchema";
 
@@ -155,6 +156,7 @@ function setup() {
     new PaymentAllocationService(configurations, planStore),
     new FamilyInvoiceBalanceService(planStore),
     { matching: matchingContext, invoices },
+    new SqlitePaymentReviewResolutionStore(database),
   );
   return { database, service };
 }

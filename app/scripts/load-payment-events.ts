@@ -13,6 +13,7 @@ import { PaymentReconciliationService } from "../src/server/services/paymentReco
 import { SchoolConfigurationService } from "../src/server/services/schoolConfigurationService";
 import { SqlitePaymentAllocationPlanStore } from "../src/server/services/sqlitePaymentAllocationPlanStore";
 import { SqlitePaymentIngestionService } from "../src/server/services/sqlitePaymentIngestionService";
+import { SqlitePaymentReviewResolutionStore } from "../src/server/services/sqlitePaymentReviewResolutionStore";
 import { SqliteSchoolConfigurationService } from "../src/server/services/sqliteSchoolConfigurationService";
 import { SqliteHelper } from "../src/server/utils/sqliteHelper";
 
@@ -105,6 +106,7 @@ try {
     new PaymentAllocationService(configurations, planStore),
     new FamilyInvoiceBalanceService(planStore),
     { matching: matchingContext, invoices },
+    new SqlitePaymentReviewResolutionStore(database),
   );
   const files = new PaymentFileRetrievalService().retrieveFiles(fileReferences);
   const reconciliation = service.processFiles(files, new Date().toISOString());

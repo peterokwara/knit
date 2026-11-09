@@ -2,12 +2,13 @@ import type { IIngestedPaymentEvent } from "../models/ingestion/IIngestedPayment
 import type { IPaymentIngestionContext } from "../models/ingestion/IPaymentIngestionContext";
 import type { IPaymentIngestionFile } from "../models/ingestion/IPaymentIngestionFile";
 import type { IPaymentIngestionStore } from "../models/ingestion/IPaymentIngestionStore";
+import type { IPaymentEventReader } from "../models/ingestion/IPaymentEventReader";
 import { adaptBankStatement } from "../utils/bankStatementAdapter";
 import { adaptMpesaEvents } from "../utils/mpesaEventAdapter";
 import type { IPaymentEventRecord } from "../models/ingestion/IPaymentEventRecord";
 
 /** Validate source files and append their normalized evidence. */
-export class PaymentIngestionService {
+export class PaymentIngestionService implements IPaymentEventReader {
   /**
    * Persistence for normalized payment events and source observations.
    */

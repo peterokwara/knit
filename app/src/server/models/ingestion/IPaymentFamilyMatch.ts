@@ -1,6 +1,6 @@
 /** How an exact payment reference identified a family. */
 export type PaymentFamilyMatchType =
-  "family_reference" | "admission_number" | "both";
+  "family_reference" | "admission_number" | "both" | "bursar_resolution";
 
 /** Why a payment must wait for a bursar decision. */
 export type PaymentFamilyHoldReason =

@@ -5,11 +5,14 @@ import type { IPaymentFamilyMatch } from "../models/ingestion/IPaymentFamilyMatc
 import type { IPaymentIngestionFile } from "../models/ingestion/IPaymentIngestionFile";
 import type { IPaymentReconciliationContext } from "../models/ingestion/IPaymentReconciliationContext";
 import type { IPaymentReconciliationResult } from "../models/ingestion/IPaymentReconciliationResult";
+import type { IPaymentReviewResolution } from "../models/ingestion/IPaymentReviewResolution";
+import type { IPaymentReviewResolutionStore } from "../models/ingestion/IPaymentReviewResolutionStore";
 import { FamilyInvoiceBalanceService } from "./familyInvoiceBalanceService";
 import { PaymentAllocationService } from "./paymentAllocationService";
 import { PaymentFamilyMatchingService } from "./paymentFamilyMatchingService";
 import { PaymentIngestionService } from "./paymentIngestionService";
 import { parseInstant, requireText } from "../utils/configurationValidation";
+import { isSavedResolutionApplicable } from "../utils/paymentReviewResolutionRules";
 
 /** Connect imported provider evidence to policy allocations and family reads. */
 export class PaymentReconciliationService {
@@ -28,6 +31,9 @@ export class PaymentReconciliationService {
   /** School and invoice context used for the full reconciliation pass. */
   private readonly _context: IPaymentReconciliationContext;
 
+  /** Durable bursar decisions that override automated review holds. */
+  private readonly _resolutions: IPaymentReviewResolutionStore;
+
   /**
    * Compose existing service boundaries for a complete reconciliation pass.
    * @param ingestion Provider event importer and persisted event reader.
@@ -35,6 +41,7 @@ export class PaymentReconciliationService {
    * @param allocation School policy allocation service.
    * @param balances Evidence-backed invoice balance reader.
    * @param context School family references and invoice records.
+   * @param resolutions Durable bursar decisions for held event variants.
    */
   constructor(
     ingestion: PaymentIngestionService,
@@ -42,12 +49,14 @@ export class PaymentReconciliationService {
     allocation: PaymentAllocationService,
     balances: FamilyInvoiceBalanceService,
     context: IPaymentReconciliationContext,
+    resolutions: IPaymentReviewResolutionStore,
   ) {
     this._ingestion = ingestion;
     this._matching = matching;
     this._allocation = allocation;
     this._balances = balances;
     this._context = context;
+    this._resolutions = resolutions;
   }
 
   /**
@@ -73,10 +82,31 @@ export class PaymentReconciliationService {
 
     this._ingestion.importFiles(files);
     const events = this._ingestion.getEvents();
-    const matches = this._matching.matchPayments(events);
+    const savedResolutions = new Map(
+      this._resolutions
+        .getResolutions(this._context.matching.schoolId)
+        .map((resolution) => [this.resolutionIdentity(resolution), resolution]),
+    );
     const eventsByIdentity = new Map(
       events.map((event) => [this.eventIdentity(event), event]),
     );
+    const matches = this._matching.matchPayments(events).map((match) => {
+      const resolution = savedResolutions.get(this.matchIdentity(match));
+      if (!resolution) return match;
+      const event = eventsByIdentity.get(this.matchIdentity(match));
+      if (
+        !event ||
+        !isSavedResolutionApplicable(event, match, resolution, this._context)
+      )
+        return match;
+      return {
+        ...match,
+        familyId: resolution.familyId,
+        matchType: "bursar_resolution" as const,
+        status: "matched" as const,
+        holdReason: null,
+      };
+    });
     let allocatedPaymentCount = 0;
 
     for (const match of matches) {
@@ -171,5 +201,18 @@ export class PaymentReconciliationService {
    */
   private matchIdentity(match: IPaymentFamilyMatch): string {
     return JSON.stringify([match.schoolId, match.eventKey, match.fingerprint]);
+  }
+
+  /**
+   * Build the same identity key from a durable resolution.
+   * @param resolution Bursar decision for an event variant.
+   * @returns Identity key.
+   */
+  private resolutionIdentity(resolution: IPaymentReviewResolution): string {
+    return JSON.stringify([
+      resolution.schoolId,
+      resolution.eventKey,
+      resolution.fingerprint,
+    ]);
   }
 }

@@ -190,6 +190,40 @@ export function initializeSchema(
     BEFORE DELETE ON payment_ingestion_observations BEGIN SELECT RAISE(ABORT, 'payment observations are immutable'); END;
   `;
 
+  const paymentReviewResolutionSchema = `
+    CREATE TABLE payment_review_resolutions (
+      school_id TEXT NOT NULL,
+      event_key TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      family_id TEXT NOT NULL CHECK(length(trim(family_id)) > 0),
+      source_reference TEXT NOT NULL CHECK(length(trim(source_reference)) > 0),
+      original_hold_reason TEXT NOT NULL CHECK(original_hold_reason IN ('missing_reference', 'unknown_reference', 'ambiguous_reference')),
+      actor_id TEXT NOT NULL CHECK(length(trim(actor_id)) > 0),
+      reason TEXT NOT NULL CHECK(length(trim(reason)) > 0),
+      resolved_at_ms INTEGER NOT NULL,
+      PRIMARY KEY (school_id, event_key, fingerprint),
+      FOREIGN KEY (school_id, event_key, fingerprint)
+        REFERENCES payment_ingestion_events(school_id, event_key, fingerprint)
+    ) STRICT;
+
+    CREATE TRIGGER payment_review_resolutions_insert_guard
+    BEFORE INSERT ON payment_review_resolutions BEGIN
+      SELECT RAISE(ABORT, 'payment resolution already exists') WHERE EXISTS (
+        SELECT 1 FROM payment_review_resolutions
+        WHERE school_id = NEW.school_id AND event_key = NEW.event_key AND fingerprint = NEW.fingerprint
+      );
+      SELECT RAISE(ABORT, 'payment resolution source reference does not match event') WHERE NOT EXISTS (
+        SELECT 1 FROM payment_ingestion_events
+        WHERE school_id = NEW.school_id AND event_key = NEW.event_key
+          AND fingerprint = NEW.fingerprint AND source_reference = NEW.source_reference
+      );
+    END;
+    CREATE TRIGGER payment_review_resolutions_no_update
+    BEFORE UPDATE ON payment_review_resolutions BEGIN SELECT RAISE(ABORT, 'payment resolutions are immutable'); END;
+    CREATE TRIGGER payment_review_resolutions_no_delete
+    BEFORE DELETE ON payment_review_resolutions BEGIN SELECT RAISE(ABORT, 'payment resolutions are immutable'); END;
+  `;
+
   // SQLite stores canonical CREATE statements. Compare with a fresh database
   // before accepting an existing schema, rather than silently recreating guards.
   const reference = createReference();
@@ -207,6 +241,12 @@ export function initializeSchema(
       )
       .all();
     reference.exec(allocationPlanSchema);
+    const expectedAllocationSchema = reference
+      .prepare(
+        "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      )
+      .all();
+    reference.exec(paymentReviewResolutionSchema);
     const expectedCurrent = reference
       .prepare(
         "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
@@ -219,7 +259,13 @@ export function initializeSchema(
       const version = database
         .prepare("PRAGMA user_version")
         .get()?.user_version;
-      if (version !== 0 && version !== 1 && version !== 2 && version !== 3)
+      if (
+        version !== 0 &&
+        version !== 1 &&
+        version !== 2 &&
+        version !== 3 &&
+        version !== 4
+      )
         throw new Error("Unsupported configuration schema version");
       const actual = database
         .prepare(
@@ -239,15 +285,25 @@ export function initializeSchema(
         database.exec(configurationSchema);
         database.exec(paymentSchema);
         database.exec(allocationPlanSchema);
+        database.exec(paymentReviewResolutionSchema);
       } else if (version === 0 && matches(expectedConfiguration)) {
         database.exec(paymentSchema);
         database.exec(allocationPlanSchema);
+        database.exec(paymentReviewResolutionSchema);
       } else if (version === 1 && matches(expectedConfiguration)) {
         database.exec(paymentSchema);
         database.exec(allocationPlanSchema);
+        database.exec(paymentReviewResolutionSchema);
       } else if (version === 2 && matches(expectedPaymentSchema)) {
         database.exec(allocationPlanSchema);
-      } else if (version === 3 && !matches(expectedCurrent)) {
+        database.exec(paymentReviewResolutionSchema);
+      } else if (version === 3 && matches(expectedAllocationSchema)) {
+        database.exec(paymentReviewResolutionSchema);
+      } else if (version === 3) {
+        throw new Error(
+          "Configuration schema protection mismatch; inspect the database before proceeding",
+        );
+      } else if (version === 4 && !matches(expectedCurrent)) {
         throw new Error(
           "Configuration schema protection mismatch; inspect the database before proceeding",
         );
@@ -256,7 +312,7 @@ export function initializeSchema(
           "Configuration schema protection mismatch; inspect the database before proceeding",
         );
       }
-      database.exec("PRAGMA user_version = 3");
+      database.exec("PRAGMA user_version = 4");
       database.exec("COMMIT");
     } catch (error) {
       database.exec("ROLLBACK");

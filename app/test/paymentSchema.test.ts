@@ -13,6 +13,10 @@ void describe("payment ingestion schema", () => {
       INSERT INTO school_configuration_versions
         (school_id, version, effective_at_ms, configuration_json, created_by, change_reason)
         VALUES ('sch_migration', 1, 0, '{}', 'test', 'migration check');
+      DROP TRIGGER payment_review_resolutions_no_delete;
+      DROP TRIGGER payment_review_resolutions_no_update;
+      DROP TRIGGER payment_review_resolutions_insert_guard;
+      DROP TABLE payment_review_resolutions;
       DROP TABLE payment_ingestion_observations;
       DROP TABLE payment_ingestion_events;
       DROP TRIGGER school_configuration_versions_plan_guard;
@@ -25,7 +29,7 @@ void describe("payment ingestion schema", () => {
 
       assert.equal(
         database.prepare("PRAGMA user_version").get()?.user_version,
-        3,
+        4,
       );
       assert.equal(
         database
@@ -52,6 +56,10 @@ void describe("payment ingestion schema", () => {
     const database = new DatabaseSync(":memory:");
     initializeSchema(database, createReference);
     database.exec(`
+      DROP TRIGGER payment_review_resolutions_no_delete;
+      DROP TRIGGER payment_review_resolutions_no_update;
+      DROP TRIGGER payment_review_resolutions_insert_guard;
+      DROP TABLE payment_review_resolutions;
       DROP TRIGGER school_configuration_versions_plan_guard;
       DROP TRIGGER payment_allocation_plans_no_delete;
       DROP TRIGGER payment_allocation_plans_no_update;
@@ -65,7 +73,7 @@ void describe("payment ingestion schema", () => {
 
       assert.equal(
         database.prepare("PRAGMA user_version").get()?.user_version,
-        3,
+        4,
       );
       assert.equal(
         database
@@ -82,6 +90,50 @@ void describe("payment ingestion schema", () => {
           )
           .get()?.count,
         1,
+      );
+    } finally {
+      database.close();
+    }
+  });
+
+  void it("adds immutable bursar resolutions to an existing version 3 database", () => {
+    const database = new DatabaseSync(":memory:");
+    initializeSchema(database, createReference);
+    database.exec(`
+      INSERT INTO payment_ingestion_events
+        (school_id, event_key, fingerprint, source, source_reference, event_kind, classification,
+         amount_minor, currency, occurred_at, occurred_on, payment_reference, related_reference, issue)
+        VALUES ('sch_migration', 'bank:FT-1', 'fingerprint-1', 'bank', 'FT-1', 'bank_line', 'payment',
+          10000, 'KES', NULL, '2026-11-03', 'FAM-1', NULL, NULL);
+      DROP TRIGGER payment_review_resolutions_no_delete;
+      DROP TRIGGER payment_review_resolutions_no_update;
+      DROP TRIGGER payment_review_resolutions_insert_guard;
+      DROP TABLE payment_review_resolutions;
+      PRAGMA user_version = 3;
+    `);
+
+    try {
+      initializeSchema(database, createReference);
+
+      assert.equal(
+        database.prepare("PRAGMA user_version").get()?.user_version,
+        4,
+      );
+      assert.equal(
+        database
+          .prepare(
+            "SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table' AND name = 'payment_review_resolutions'",
+          )
+          .get()?.count,
+        1,
+      );
+      assert.equal(
+        database
+          .prepare(
+            "SELECT source_reference FROM payment_ingestion_events WHERE event_key = ?",
+          )
+          .get("bank:FT-1")?.source_reference,
+        "FT-1",
       );
     } finally {
       database.close();

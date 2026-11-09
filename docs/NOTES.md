@@ -197,13 +197,12 @@ These observations come from the local fixtures. Proposed handling is a starting
 
 Scores use a relative 1–5 scale: impact 5 means a direct effect on correct, explainable balances or a required submission item; effort 5 means the largest implementation cost. The sequence also respects dependencies, so a backend prerequisite can come before a similarly scored screen task.
 
-Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, policy-based allocation, explainable family invoice balances, and the fixture-to-balance service flow are complete. `PaymentReconciliationService` connects the existing services while keeping file retrieval separate. It leaves held and zero-net payments out of allocation and returns every configured family's invoice balances with saved source and policy evidence. The system still needs durable human resolutions and a bursar screen.
+Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, policy-based allocation, explainable family invoice balances, fixture reconciliation, and durable human resolutions are complete. `PaymentReconciliationService` connects the existing services while keeping file retrieval separate. It leaves held and zero-net payments out of allocation and returns every configured family's invoice balances with saved source and policy evidence. `PaymentReviewResolutionService` records an immutable bursar decision and allocates only eligible positive payments in the school's billing currency. The system still needs a bursar screen.
 
 | Rank | Remaining task | Impact | Effort | Why it ranks here and completion evidence |
 |---|---|---:|---:|---|
-| 1 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
-| 2 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
-| 3 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
-| 4 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
+| 1 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Use the public review and resolution services. |
+| 2 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
+| 3 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
 
-The next coding slice is rank 1: add an idempotent bursar resolution path for payments held for review.
+The next coding slice is rank 1: build the bursar screen over the family balance, held-payment, and resolution service seams.
