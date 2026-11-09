@@ -1,17 +1,15 @@
 import type { IAllocationInvoice } from "../models/allocation/IAllocationInvoice";
 import type { IFamilyReconciliationBalance } from "../models/ingestion/IFamilyReconciliationBalance";
-import type { IIngestedPaymentEvent } from "../models/ingestion/IIngestedPaymentEvent";
-import type { IPaymentFamilyMatch } from "../models/ingestion/IPaymentFamilyMatch";
 import type { IPaymentIngestionFile } from "../models/ingestion/IPaymentIngestionFile";
 import type { IPaymentReconciliationContext } from "../models/ingestion/IPaymentReconciliationContext";
 import type { IPaymentReconciliationResult } from "../models/ingestion/IPaymentReconciliationResult";
-import type { IPaymentReviewResolution } from "../models/ingestion/IPaymentReviewResolution";
 import type { IPaymentReviewResolutionStore } from "../models/ingestion/IPaymentReviewResolutionStore";
 import { FamilyInvoiceBalanceService } from "./familyInvoiceBalanceService";
 import { PaymentAllocationService } from "./paymentAllocationService";
 import { PaymentFamilyMatchingService } from "./paymentFamilyMatchingService";
 import { PaymentIngestionService } from "./paymentIngestionService";
 import { parseInstant, requireText } from "../utils/configurationValidation";
+import { paymentEventIdentity } from "../utils/paymentEventIdentity";
 import { isSavedResolutionApplicable } from "../utils/paymentReviewResolutionRules";
 
 /** Connect imported provider evidence to policy allocations and family reads. */
@@ -85,15 +83,15 @@ export class PaymentReconciliationService {
     const savedResolutions = new Map(
       this._resolutions
         .getResolutions(this._context.matching.schoolId)
-        .map((resolution) => [this.resolutionIdentity(resolution), resolution]),
+        .map((resolution) => [paymentEventIdentity(resolution), resolution]),
     );
     const eventsByIdentity = new Map(
-      events.map((event) => [this.eventIdentity(event), event]),
+      events.map((event) => [paymentEventIdentity(event), event]),
     );
     const matches = this._matching.matchPayments(events).map((match) => {
-      const resolution = savedResolutions.get(this.matchIdentity(match));
+      const resolution = savedResolutions.get(paymentEventIdentity(match));
       if (!resolution) return match;
-      const event = eventsByIdentity.get(this.matchIdentity(match));
+      const event = eventsByIdentity.get(paymentEventIdentity(match));
       if (
         !event ||
         !isSavedResolutionApplicable(event, match, resolution, this._context)
@@ -113,7 +111,7 @@ export class PaymentReconciliationService {
       if (match.status !== "matched") continue;
       if (!match.familyId)
         throw new Error(`Matched event ${match.eventKey} has no family`);
-      const event = eventsByIdentity.get(this.matchIdentity(match));
+      const event = eventsByIdentity.get(paymentEventIdentity(match));
       if (!event)
         throw new Error(`Matched event ${match.eventKey} was not imported`);
       if (event.classification !== "payment" || event.netAmountMinor <= 0)
@@ -183,36 +181,5 @@ export class PaymentReconciliationService {
           `Invoice ${invoice.invoiceId} is outside this school context`,
         );
     }
-  }
-
-  /**
-   * Build the full persisted identity used to associate a match and event.
-   * @param event Persisted event variant.
-   * @returns Identity key.
-   */
-  private eventIdentity(event: IIngestedPaymentEvent): string {
-    return JSON.stringify([event.schoolId, event.eventKey, event.fingerprint]);
-  }
-
-  /**
-   * Build the same identity key from a matching decision.
-   * @param match Family decision.
-   * @returns Identity key.
-   */
-  private matchIdentity(match: IPaymentFamilyMatch): string {
-    return JSON.stringify([match.schoolId, match.eventKey, match.fingerprint]);
-  }
-
-  /**
-   * Build the same identity key from a durable resolution.
-   * @param resolution Bursar decision for an event variant.
-   * @returns Identity key.
-   */
-  private resolutionIdentity(resolution: IPaymentReviewResolution): string {
-    return JSON.stringify([
-      resolution.schoolId,
-      resolution.eventKey,
-      resolution.fingerprint,
-    ]);
   }
 }

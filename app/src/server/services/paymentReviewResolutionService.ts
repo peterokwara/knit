@@ -1,6 +1,5 @@
 import type { IAllocationInvoice } from "../models/allocation/IAllocationInvoice";
 import type { IHeldPaymentReviewItem } from "../models/ingestion/IHeldPaymentReviewItem";
-import type { IIngestedPaymentEvent } from "../models/ingestion/IIngestedPaymentEvent";
 import type {
   IPaymentFamilyMatch,
   PaymentFamilyHoldReason,
@@ -19,6 +18,7 @@ import {
   isPaymentResolutionEligible,
   isSavedResolutionApplicable,
 } from "../utils/paymentReviewResolutionRules";
+import { paymentEventIdentity } from "../utils/paymentEventIdentity";
 
 type CorrectableHoldReason = Extract<
   PaymentFamilyHoldReason,
@@ -89,21 +89,21 @@ export class PaymentReviewResolutionService {
     const schoolId = this._context.matching.schoolId;
     const events = this._ingestion.getEvents();
     const eventsByIdentity = new Map(
-      events.map((event) => [this.eventIdentity(event), event]),
+      events.map((event) => [paymentEventIdentity(event), event]),
     );
     const resolutions = new Map(
       this._store
         .getResolutions(schoolId)
-        .map((resolution) => [this.resolutionIdentity(resolution), resolution]),
+        .map((resolution) => [paymentEventIdentity(resolution), resolution]),
     );
 
     return this._matching
       .matchPayments(events)
       .filter((match) => match.status === "held")
       .flatMap((match) => {
-        const event = eventsByIdentity.get(this.matchIdentity(match));
+        const event = eventsByIdentity.get(paymentEventIdentity(match));
         if (!event || !match.holdReason) return [];
-        const resolution = resolutions.get(this.matchIdentity(match));
+        const resolution = resolutions.get(paymentEventIdentity(match));
         if (
           resolution &&
           isSavedResolutionApplicable(event, match, resolution, this._context)
@@ -187,7 +187,7 @@ export class PaymentReviewResolutionService {
       .matchPayments([event])
       .find(
         (candidate) =>
-          this.matchIdentity(candidate) === this.eventIdentity(event),
+          paymentEventIdentity(candidate) === paymentEventIdentity(event),
       );
     if (
       !match ||
@@ -240,36 +240,5 @@ export class PaymentReviewResolutionService {
     return this._context.invoices.filter(
       (invoice) => invoice.familyId === familyId,
     );
-  }
-
-  /**
-   * Build the exact provider-event identity used across service boundaries.
-   * @param event Persisted payment event.
-   * @returns Identity key.
-   */
-  private eventIdentity(event: IIngestedPaymentEvent): string {
-    return JSON.stringify([event.schoolId, event.eventKey, event.fingerprint]);
-  }
-
-  /**
-   * Build the same identity from an automated match.
-   * @param match Family matching decision.
-   * @returns Identity key.
-   */
-  private matchIdentity(match: IPaymentFamilyMatch): string {
-    return JSON.stringify([match.schoolId, match.eventKey, match.fingerprint]);
-  }
-
-  /**
-   * Build the same identity from a saved resolution.
-   * @param resolution Durable resolution record.
-   * @returns Identity key.
-   */
-  private resolutionIdentity(resolution: IPaymentReviewResolution): string {
-    return JSON.stringify([
-      resolution.schoolId,
-      resolution.eventKey,
-      resolution.fingerprint,
-    ]);
   }
 }
