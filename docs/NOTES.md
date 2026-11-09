@@ -193,19 +193,20 @@ These observations come from the local fixtures. Proposed handling is a starting
 | School-specific settings | Mlima, Pwani and the platform defaults differ. | A migration or default update must not silently replace existing school settings. |
 | Family with siblings | `FAM-202` has two learners and multiple invoices. | Match the family first and apply its school's policy across its open invoices. |
 
-## Candidate work, ranked for impact and effort
+## Remaining work, ranked by impact and effort
 
-The order is a planning judgment, not a substitute for the brief: all Part A requirements still need coverage. Part B review and the required AI-usage notes also need time.
+Scores use a relative 1–5 scale: impact 5 means a direct effect on correct, explainable balances or a required submission item; effort 5 means the largest implementation cost. The sequence also respects dependencies, so a backend prerequisite can come before a similarly scored screen task.
 
-| Rank | Smallest useful task | Impact / effort | Evidence of completion |
-|---|---|---|---|
-| 1 | Inspect fixtures and write down risks and decisions. | High / small | The table above and a short list of unresolved rules. |
-| 2 | Set up strict TypeScript, TanStack Start, SQLite and a runnable skeleton. | Enabler / small | One documented command starts the application and opens the database. |
-| 3 | Protect school-specific configuration and record versions; demonstrate a bad reset is caught. | Very high / medium | A test or script proves the reset is detected; both schools retain their own settings. |
-| 4 | Capture provider evidence and make repeated ingestion safe. | Very high / medium | Replaying and shuffling fixtures preserves the correct results, including reversals and overlapping exports. |
-| 5 | Allocate under the applicable policy and explain invoice balances. | Very high / medium | Each balance traces to money, source and policy version; policy changes do not silently rewrite history. |
-| 6 | Hold uncertain items and resolve one safely. | High / medium | A bursar decision is auditable and a retry does not apply it twice. |
-| 7 | Build the single bursar screen. | Required / medium | Select a family, inspect invoice trails and unresolved items, and resolve one. |
-| 8 | Document trade-offs and AI usage; complete Part B review. | Required / medium | Required solution notes and review are present and specific. |
+Setup, protected configuration storage, and replay-safe provider ingestion are complete. The remaining core is identifying the right family, allocating under the right policy, and exposing an auditable result.
 
-Tasks 3–6 are closely connected. Start with a narrow example, then expand to all fixtures; a single example is not the finished assessment.
+| Rank | Remaining task | Impact | Effort | Why it ranks here and completion evidence |
+|---|---|---:|---:|---|
+| 1 | Match each confirmed payment to a family; keep mistyped, missing, ambiguous, and unsupported-currency cases in suspense. | 5 | 3 | Wrong-family allocation is the largest trust risk. Tests show exact admission/family matching, no fuzzy correction of `ADM-1O47`, and safe handling of the USD payment. |
+| 2 | Allocate matched money to open invoices under each school's policy; record immutable allocation evidence and the policy version in force. | 5 | 4 | This is the core accounting behavior. Tests cover invoice ordering, partial payments, overpayments, retries, and the CR-118 noon boundary. Existing allocations remain explainable after policy changes. |
+| 3 | Return a family's balance for every invoice with the payment, source, and policy trail behind each number. | 5 | 3 | This is the brief's central user outcome. A public service read returns correct fixture balances with a traceable explanation. |
+| 4 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
+| 5 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
+| 6 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
+| 7 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
+
+The best next coding slice is rank 1: a confirmed payment resolves to one family or stays in suspense. That gives rank 2 a trustworthy input and creates a clear point to test policy-based allocation.
