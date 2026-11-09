@@ -1,3 +1,5 @@
+import type { IExpectedPaymentAllocationPreview } from "../allocation/IExpectedPaymentAllocationPreview";
+
 /** Bursar's explicit decision for one correctable held payment. */
 export interface IPaymentReviewResolutionInput {
   /** Stable provider event identity. */
@@ -17,4 +19,10 @@ export interface IPaymentReviewResolutionInput {
 
   /** Trusted server instant when the bursar confirms the decision. */
   resolvedAt: string;
+
+  /** Policy version the bursar confirmed in the preview. */
+  expectedPolicyVersion?: number;
+
+  /** Invoice allocations and remainder shown in the confirmation preview. */
+  expectedPlan?: IExpectedPaymentAllocationPreview;
 }

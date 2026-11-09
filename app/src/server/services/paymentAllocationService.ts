@@ -43,9 +43,46 @@ export class PaymentAllocationService {
     invoices: IAllocationInvoice[],
     allocationAt: string,
   ): IPaymentAllocationPlan {
+    return this.createPlan(event, match, invoices, allocationAt, true);
+  }
+
+  /**
+   * Calculate the exact policy plan without persisting it.
+   * @param event Persisted normalized payment event.
+   * @param match Exact family match for this payment variant.
+   * @param invoices Open invoices belonging to the selected family.
+   * @param allocationAt Trusted server time with an explicit time zone.
+   * @returns The plan that would be saved at this instant.
+   */
+  previewPayment(
+    event: IIngestedPaymentEvent,
+    match: IPaymentFamilyMatch,
+    invoices: IAllocationInvoice[],
+    allocationAt: string,
+  ): IPaymentAllocationPlan {
+    return this.createPlan(event, match, invoices, allocationAt, false);
+  }
+
+  /**
+   * Build an allocation plan, optionally writing its immutable evidence.
+   * @param event Persisted normalized payment event.
+   * @param match Exact family match for this payment variant.
+   * @param invoices Open invoices belonging to the selected family.
+   * @param allocationAt Trusted server time with an explicit time zone.
+   * @param persist Whether to save the plan and invoice evidence.
+   * @returns The calculated or saved plan.
+   */
+  private createPlan(
+    event: IIngestedPaymentEvent,
+    match: IPaymentFamilyMatch,
+    invoices: IAllocationInvoice[],
+    allocationAt: string,
+    persist: boolean,
+  ): IPaymentAllocationPlan {
     this.validateMatchedPayment(event, match);
     requireText(allocationAt, "allocationAt");
     const effectiveAtMs = parseInstant(allocationAt);
+    const normalizedAllocationAt = new Date(effectiveAtMs).toISOString();
     const existing = this._store.getPlan(event.schoolId, event.eventKey);
     if (existing) {
       this.assertReplayMatches(existing, event, match);
@@ -94,7 +131,7 @@ export class PaymentAllocationService {
         invoiceId: invoice.invoiceId,
         source: event.source,
         amountMinor,
-        effectiveAt: allocationAt,
+        effectiveAt: normalizedAllocationAt,
         policyVersion: policyVersion.version,
       });
       remaining -= amountMinor;
@@ -113,12 +150,13 @@ export class PaymentAllocationService {
       source: event.source,
       amountMinor: event.netAmountMinor,
       currency: event.currency,
-      effectiveAt: allocationAt,
+      effectiveAt: normalizedAllocationAt,
       policyVersion: policyVersion.version,
       allocations,
       remainderMinor: remaining,
       remainderTreatment,
     };
+    if (!persist) return plan;
     const saved = this._store.recordPlan(
       plan,
       effectiveAtMs,
@@ -143,6 +181,31 @@ export class PaymentAllocationService {
     const plan = this._store.getPlan(schoolId, paymentId);
     if (!plan) throw new Error(`Allocation plan for ${paymentId} not found`);
     return plan;
+  }
+
+  /**
+   * Read a saved plan when one exists.
+   * @param schoolId School that owns the payment.
+   * @param paymentId Stable provider event identity.
+   * @returns The saved plan, or undefined while allocation remains pending.
+   */
+  findPlan(
+    schoolId: string,
+    paymentId: string,
+  ): IPaymentAllocationPlan | undefined {
+    requireText(schoolId, "schoolId");
+    requireText(paymentId, "paymentId");
+    return this._store.getPlan(schoolId, paymentId);
+  }
+
+  /**
+   * Read the policy version effective at the supplied instant.
+   * @param schoolId School that owns the configuration.
+   * @param effectiveAt Allocation instant.
+   * @returns Effective policy version.
+   */
+  getCurrentPolicyVersion(schoolId: string, effectiveAt: string): number {
+    return this._configurations.getVersionAt(schoolId, effectiveAt).version;
   }
 
   /**

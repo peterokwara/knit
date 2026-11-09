@@ -1,4 +1,5 @@
 import type { IAllocationInvoice } from "../models/allocation/IAllocationInvoice";
+import type { IExpectedPaymentAllocationPreview } from "../models/allocation/IExpectedPaymentAllocationPreview";
 import type { IHeldPaymentReviewItem } from "../models/ingestion/IHeldPaymentReviewItem";
 import type {
   IPaymentFamilyMatch,
@@ -82,7 +83,7 @@ export class PaymentReviewResolutionService {
 
   /**
    * List held payment candidates and mark which can safely receive a family decision.
-   * Already resolved events are omitted from the queue.
+   * Saved decisions remain visible while their allocation is pending.
    * @returns Review items in the matcher's stable event order.
    */
   listHeldPayments(): IHeldPaymentReviewItem[] {
@@ -104,9 +105,14 @@ export class PaymentReviewResolutionService {
         const event = eventsByIdentity.get(paymentEventIdentity(match));
         if (!event || !match.holdReason) return [];
         const resolution = resolutions.get(paymentEventIdentity(match));
-        if (
+        const applicableResolution =
           resolution &&
           isSavedResolutionApplicable(event, match, resolution, this._context)
+            ? resolution
+            : undefined;
+        if (
+          applicableResolution &&
+          this._allocation.findPlan(event.schoolId, event.eventKey)
         )
           return [];
         return [
@@ -128,6 +134,9 @@ export class PaymentReviewResolutionService {
               match,
               this._context,
             ),
+            ...(applicableResolution
+              ? { resolution: applicableResolution, allocationPending: true }
+              : {}),
           },
         ];
       });
@@ -196,6 +205,17 @@ export class PaymentReviewResolutionService {
     )
       throw new Error("Payment event cannot be safely resolved");
 
+    if (input.expectedPolicyVersion !== undefined) {
+      const currentPolicyVersion = this._allocation.getCurrentPolicyVersion(
+        event.schoolId,
+        resolvedAt,
+      );
+      if (currentPolicyVersion !== input.expectedPolicyVersion)
+        throw new Error(
+          "School policy changed after preview; refresh the plan before confirming",
+        );
+    }
+
     const resolution: IPaymentReviewResolution = {
       schoolId: event.schoolId,
       eventKey: event.eventKey,
@@ -207,6 +227,25 @@ export class PaymentReviewResolutionService {
       reason: input.reason.trim(),
       resolvedAt,
     };
+    if (input.expectedPlan) {
+      const resolvedMatch: IPaymentFamilyMatch = {
+        ...match,
+        familyId: family.familyId,
+        matchType: "bursar_resolution",
+        status: "matched",
+        holdReason: null,
+      };
+      const currentPlan = this._allocation.previewPayment(
+        event,
+        resolvedMatch,
+        this.invoicesForFamily(family.familyId),
+        resolvedAt,
+      );
+      if (!this.samePlanAmounts(currentPlan, input.expectedPlan))
+        throw new Error(
+          "Family invoice balances changed after preview; refresh the plan before confirming",
+        );
+    }
     const saved = this._store.recordResolution(resolution);
     const resolvedMatch: IPaymentFamilyMatch = {
       ...match,
@@ -239,6 +278,35 @@ export class PaymentReviewResolutionService {
   private invoicesForFamily(familyId: string): IAllocationInvoice[] {
     return this._context.invoices.filter(
       (invoice) => invoice.familyId === familyId,
+    );
+  }
+
+  /**
+   * Compare the allocation consequences while ignoring preview timestamps.
+   * @param currentPlan Plan recalculated at the confirmation instant.
+   * @param expectedPlan Plan shown to the bursar before confirmation.
+   * @returns Whether the invoice lines and remainder remain identical.
+   */
+  private samePlanAmounts(
+    currentPlan: IExpectedPaymentAllocationPreview,
+    expectedPlan: IExpectedPaymentAllocationPreview,
+  ): boolean {
+    return (
+      currentPlan.policyVersion === expectedPlan.policyVersion &&
+      currentPlan.remainderMinor === expectedPlan.remainderMinor &&
+      currentPlan.remainderTreatment === expectedPlan.remainderTreatment &&
+      JSON.stringify(
+        currentPlan.allocations.map(({ invoiceId, amountMinor }) => ({
+          invoiceId,
+          amountMinor,
+        })),
+      ) ===
+        JSON.stringify(
+          expectedPlan.allocations.map(({ invoiceId, amountMinor }) => ({
+            invoiceId,
+            amountMinor,
+          })),
+        )
     );
   }
 }

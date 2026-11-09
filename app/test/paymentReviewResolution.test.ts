@@ -223,6 +223,36 @@ void describe("payment review resolution", () => {
         reason: "Verified against the parent's bank transfer receipt.",
         resolvedAt: "2026-11-10T09:00:00+03:00",
       };
+      assert.throws(
+        () =>
+          services.review.resolvePayment({
+            ...input,
+            expectedPolicyVersion: 1,
+          }),
+        /policy changed after preview/,
+      );
+      assert.equal(
+        services.review.getResolution(input.eventKey, input.fingerprint),
+        undefined,
+      );
+      assert.throws(
+        () =>
+          services.review.resolvePayment({
+            ...input,
+            expectedPolicyVersion: 2,
+            expectedPlan: {
+              policyVersion: 2,
+              allocations: [],
+              remainderMinor: 0,
+              remainderTreatment: "none",
+            },
+          }),
+        /invoice balances changed after preview/,
+      );
+      assert.equal(
+        services.review.getResolution(input.eventKey, input.fingerprint),
+        undefined,
+      );
       const resolved = services.review.resolvePayment(input);
       assert.equal(resolved.resolution.familyId, "fam_206");
       assert.equal(resolved.resolution.actorId, "bursar-17");

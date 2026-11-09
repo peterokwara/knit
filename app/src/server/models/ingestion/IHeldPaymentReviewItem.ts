@@ -1,5 +1,6 @@
 import type { PaymentFamilyHoldReason } from "./IPaymentFamilyMatch";
 import type { PaymentEventSource } from "./IPaymentEventRecord";
+import type { IPaymentReviewResolution } from "./IPaymentReviewResolution";
 
 /** Payment evidence and actionability shown in the bursar review queue. */
 export interface IHeldPaymentReviewItem {
@@ -41,4 +42,10 @@ export interface IHeldPaymentReviewItem {
 
   /** Whether this event can be safely assigned to a family now. */
   resolutionEligible: boolean;
+
+  /** Saved decision awaiting allocation, when a previous allocation attempt failed. */
+  resolution?: IPaymentReviewResolution;
+
+  /** Whether a saved decision still needs its allocation plan. */
+  allocationPending?: boolean;
 }

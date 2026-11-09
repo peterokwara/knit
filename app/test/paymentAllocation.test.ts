@@ -124,6 +124,52 @@ function setup() {
 }
 
 void describe("payment allocation", () => {
+  void it("previews the exact plan without saving it", () => {
+    const { database, configurations, allocation } = setup();
+    try {
+      configurations.applyChange({
+        changeId: changeRequest.change_request,
+        schoolId: changeRequest.school_id,
+        expectedVersion: 1,
+        effectiveAt: changeRequest.effective_from,
+        requestedBy: changeRequest.requested_by,
+        approvedBy: changeRequest.approved_by,
+        reason: changeRequest.reason,
+        categoryPriority: changeRequest.patch.allocation.category_priority,
+      });
+      const event = payment("payment-preview", 1_000_000);
+      const preview = allocation.previewPayment(
+        event,
+        match(event),
+        invoices,
+        "2026-11-03T12:00:00+03:00",
+      );
+      assert.equal(preview.policyVersion, 2);
+      assert.deepEqual(
+        preview.allocations.map(({ invoiceId, amountMinor }) => ({
+          invoiceId,
+          amountMinor,
+        })),
+        [
+          { invoiceId: "INV-2002", amountMinor: 900_000 },
+          { invoiceId: "INV-2001", amountMinor: 100_000 },
+        ],
+      );
+      assert.equal(allocation.findPlan("sch_mlima", event.eventKey), undefined);
+      assert.deepEqual(
+        allocation.allocatePayment(
+          event,
+          match(event),
+          invoices,
+          "2026-11-03T12:00:00+03:00",
+        ),
+        preview,
+      );
+    } finally {
+      database.close();
+    }
+  });
+
   void it("uses the policy effective at the trusted instant and reads back the saved plan", () => {
     const { database, configurations, allocation } = setup();
     try {
