@@ -1,23 +1,28 @@
-import type { IApprovedPolicyChange } from '../models/configuration/IApprovedPolicyChange'
-import type { IInitialSchoolConfiguration } from '../models/configuration/IInitialSchoolConfiguration'
-import type { ISchoolConfigurationReader } from '../models/configuration/ISchoolConfigurationReader'
-import type { ISchoolConfigurationStore } from '../models/configuration/ISchoolConfigurationStore'
-import type { ISchoolConfigurationVersion } from '../models/configuration/ISchoolConfigurationVersion'
-import { parseInstant, requireText, validateCategoryPriority, validateConfiguration } from '../utils/configurationValidation'
+import type { IApprovedPolicyChange } from "../models/configuration/IApprovedPolicyChange";
+import type { IInitialSchoolConfiguration } from "../models/configuration/IInitialSchoolConfiguration";
+import type { ISchoolConfigurationReader } from "../models/configuration/ISchoolConfigurationReader";
+import type { ISchoolConfigurationStore } from "../models/configuration/ISchoolConfigurationStore";
+import type { ISchoolConfigurationVersion } from "../models/configuration/ISchoolConfigurationVersion";
+import {
+  parseInstant,
+  requireText,
+  validateCategoryPriority,
+  validateConfiguration,
+} from "../utils/configurationValidation";
 
 /** Manage school-owned configuration through an injected persistence contract. */
 export class SchoolConfigurationService implements ISchoolConfigurationReader {
   /**
    * The storage service used for immutable school configuration versions.
    */
-  private readonly _store: ISchoolConfigurationStore
+  private readonly _store: ISchoolConfigurationStore;
 
   /**
    * Create the service with its storage dependency.
    * @param store - Persistence for immutable configuration versions.
    */
   constructor(store: ISchoolConfigurationStore) {
-    this._store = store
+    this._store = store;
   }
 
   /**
@@ -25,12 +30,14 @@ export class SchoolConfigurationService implements ISchoolConfigurationReader {
    * @param input - School settings and onboarding metadata.
    * @returns The initial immutable version.
    */
-  createSchool(input: IInitialSchoolConfiguration): ISchoolConfigurationVersion {
-    requireText(input.schoolId, 'schoolId')
-    requireText(input.createdBy, 'createdBy')
-    requireText(input.reason, 'reason')
-    validateConfiguration(input.configuration)
-    return this._store.createInitial(input, parseInstant(input.effectiveAt))
+  createSchool(
+    input: IInitialSchoolConfiguration,
+  ): ISchoolConfigurationVersion {
+    requireText(input.schoolId, "schoolId");
+    requireText(input.createdBy, "createdBy");
+    requireText(input.reason, "reason");
+    validateConfiguration(input.configuration);
+    return this._store.createInitial(input, parseInstant(input.effectiveAt));
   }
 
   /**
@@ -39,10 +46,21 @@ export class SchoolConfigurationService implements ISchoolConfigurationReader {
    * @returns The new immutable configuration version.
    */
   applyChange(input: IApprovedPolicyChange): ISchoolConfigurationVersion {
-    for (const [name, value] of Object.entries({ changeId: input.changeId, schoolId: input.schoolId, requestedBy: input.requestedBy, approvedBy: input.approvedBy, reason: input.reason })) requireText(value, name)
-    if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1) throw new Error('expectedVersion must be a positive integer')
-    validateCategoryPriority(input.categoryPriority)
-    return this._store.applyChange(input, parseInstant(input.effectiveAt))
+    for (const [name, value] of Object.entries({
+      changeId: input.changeId,
+      schoolId: input.schoolId,
+      requestedBy: input.requestedBy,
+      approvedBy: input.approvedBy,
+      reason: input.reason,
+    }))
+      requireText(value, name);
+    if (
+      !Number.isSafeInteger(input.expectedVersion) ||
+      input.expectedVersion < 1
+    )
+      throw new Error("expectedVersion must be a positive integer");
+    validateCategoryPriority(input.categoryPriority);
+    return this._store.applyChange(input, parseInstant(input.effectiveAt));
   }
 
   /**
@@ -51,10 +69,10 @@ export class SchoolConfigurationService implements ISchoolConfigurationReader {
    * @returns The recorded change and its approval details.
    */
   getChange(changeId: string): IApprovedPolicyChange {
-    requireText(changeId, 'changeId')
-    const result = this._store.getChange(changeId)
-    if (!result) throw new Error(`Configuration change ${changeId} not found`)
-    return result
+    requireText(changeId, "changeId");
+    const result = this._store.getChange(changeId);
+    if (!result) throw new Error(`Configuration change ${changeId} not found`);
+    return result;
   }
 
   /**
@@ -64,10 +82,13 @@ export class SchoolConfigurationService implements ISchoolConfigurationReader {
    * @returns The requested version.
    */
   getVersion(schoolId: string, version: number): ISchoolConfigurationVersion {
-    requireText(schoolId, 'schoolId')
-    const result = this._store.getVersion(schoolId, version)
-    if (!result) throw new Error(`Configuration version ${version} not found for ${schoolId}`)
-    return result
+    requireText(schoolId, "schoolId");
+    const result = this._store.getVersion(schoolId, version);
+    if (!result)
+      throw new Error(
+        `Configuration version ${version} not found for ${schoolId}`,
+      );
+    return result;
   }
 
   /**
@@ -76,10 +97,19 @@ export class SchoolConfigurationService implements ISchoolConfigurationReader {
    * @param effectiveAt - Allocation time with an explicit time zone.
    * @returns The configuration in force at that instant.
    */
-  getVersionAt(schoolId: string, effectiveAt: string): ISchoolConfigurationVersion {
-    requireText(schoolId, 'schoolId')
-    const result = this._store.getVersionAt(schoolId, parseInstant(effectiveAt))
-    if (!result) throw new Error(`No configuration effective for ${schoolId} at ${effectiveAt}`)
-    return result
+  getVersionAt(
+    schoolId: string,
+    effectiveAt: string,
+  ): ISchoolConfigurationVersion {
+    requireText(schoolId, "schoolId");
+    const result = this._store.getVersionAt(
+      schoolId,
+      parseInstant(effectiveAt),
+    );
+    if (!result)
+      throw new Error(
+        `No configuration effective for ${schoolId} at ${effectiveAt}`,
+      );
+    return result;
   }
 }

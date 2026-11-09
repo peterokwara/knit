@@ -1,4 +1,4 @@
-import type { IDatabaseRow } from '../models/database/IDatabaseRow'
+import type { IDatabaseRow } from "../models/database/IDatabaseRow";
 
 /**
  * Read a required text column from a SQLite row.
@@ -7,9 +7,10 @@ import type { IDatabaseRow } from '../models/database/IDatabaseRow'
  * @returns The column's text value.
  */
 export function readText(row: IDatabaseRow, column: string): string {
-  const value = row[column]
-  if (typeof value !== 'string') throw new Error(`Invalid database column ${column}`)
-  return value
+  const value = row[column];
+  if (typeof value !== "string")
+    throw new Error(`Invalid database column ${column}`);
+  return value;
 }
 
 /**
@@ -19,7 +20,8 @@ export function readText(row: IDatabaseRow, column: string): string {
  * @returns The column's safe integer value.
  */
 export function readInteger(row: IDatabaseRow, column: string): number {
-  const value = row[column]
-  if (typeof value !== 'number' || !Number.isSafeInteger(value)) throw new Error(`Invalid database column ${column}`)
-  return value
+  const value = row[column];
+  if (typeof value !== "number" || !Number.isSafeInteger(value))
+    throw new Error(`Invalid database column ${column}`);
+  return value;
 }

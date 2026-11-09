@@ -1,4 +1,4 @@
-import type { ISchoolConfigurationVersion } from './ISchoolConfigurationVersion'
+import type { ISchoolConfigurationVersion } from "./ISchoolConfigurationVersion";
 
 /**
  * The policy lookup required when recording an allocation.
@@ -10,5 +10,8 @@ export interface ISchoolConfigurationReader {
    * @param effectiveAt The allocation time with a time zone.
    * @returns The configuration effective at that time.
    */
-  getVersionAt(schoolId: string, effectiveAt: string): ISchoolConfigurationVersion
+  getVersionAt(
+    schoolId: string,
+    effectiveAt: string,
+  ): ISchoolConfigurationVersion;
 }

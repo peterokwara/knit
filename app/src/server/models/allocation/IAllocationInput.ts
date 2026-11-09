@@ -5,35 +5,35 @@ export interface IAllocationInput {
   /**
    * The allocation's unique identifier.
    */
-  id: string
+  id: string;
 
   /**
    * The school that owns the invoice and policy.
    */
-  schoolId: string
+  schoolId: string;
 
   /**
    * The payment associated with the allocation.
    */
-  paymentId: string
+  paymentId: string;
 
   /**
    * The invoice selected by the caller.
    */
-  invoiceId: string
+  invoiceId: string;
 
   /**
    * The source from which the payment was recorded.
    */
-  source: string
+  source: string;
 
   /**
    * The positive allocation amount in minor currency units.
    */
-  amountMinor: number
+  amountMinor: number;
 
   /**
    * The allocation time supplied by trusted server code, with a time zone.
    */
-  effectiveAt: string
+  effectiveAt: string;
 }

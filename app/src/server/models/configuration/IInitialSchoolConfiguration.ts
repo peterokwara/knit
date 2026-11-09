@@ -1,4 +1,4 @@
-import type { ISchoolConfiguration } from './ISchoolConfiguration'
+import type { ISchoolConfiguration } from "./ISchoolConfiguration";
 
 /**
  * The school-specific settings and metadata supplied at onboarding.
@@ -7,25 +7,25 @@ export interface IInitialSchoolConfiguration {
   /**
    * The school that owns the settings.
    */
-  schoolId: string
+  schoolId: string;
 
   /**
    * The instant the initial settings take effect, with a time zone.
    */
-  effectiveAt: string
+  effectiveAt: string;
 
   /**
    * The complete settings to save for the school.
    */
-  configuration: ISchoolConfiguration
+  configuration: ISchoolConfiguration;
 
   /**
    * The person who supplied the settings.
    */
-  createdBy: string
+  createdBy: string;
 
   /**
    * The reason for creating the initial settings.
    */
-  reason: string
+  reason: string;
 }

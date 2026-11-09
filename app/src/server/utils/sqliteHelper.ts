@@ -1,9 +1,9 @@
-import { mkdirSync } from 'node:fs'
-import path from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
-import type { SQLInputValue } from 'node:sqlite'
-import type { IDatabaseRow } from '../models/database/IDatabaseRow'
-import { initializeSchema } from './configurationSchema'
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import type { SQLInputValue } from "node:sqlite";
+import type { IDatabaseRow } from "../models/database/IDatabaseRow";
+import { initializeSchema } from "./configurationSchema";
 
 /** Own SQLite connection setup and the common database operations. */
 export class SqliteHelper {
@@ -12,15 +12,18 @@ export class SqliteHelper {
    * @param filename - Database filename, or an in-memory SQLite name.
    * @returns The initialized SQLite connection.
    */
-  static openConnection(filename = path.resolve(process.cwd(), 'data', 'knit.sqlite')): DatabaseSync {
-    if (filename !== ':memory:') mkdirSync(path.dirname(path.resolve(filename)), { recursive: true })
-    const database = new DatabaseSync(filename)
+  static openConnection(
+    filename = path.resolve(process.cwd(), "data", "knit.sqlite"),
+  ): DatabaseSync {
+    if (filename !== ":memory:")
+      mkdirSync(path.dirname(path.resolve(filename)), { recursive: true });
+    const database = new DatabaseSync(filename);
     try {
-      initializeSchema(database, () => new DatabaseSync(':memory:'))
-      return database
+      initializeSchema(database, () => new DatabaseSync(":memory:"));
+      return database;
     } catch (error) {
-      database.close()
-      throw error
+      database.close();
+      throw error;
     }
   }
 
@@ -29,7 +32,7 @@ export class SqliteHelper {
    * @param database - The connection to close.
    */
   static closeConnection(database: DatabaseSync): void {
-    database.close()
+    database.close();
   }
 
   /**
@@ -39,8 +42,12 @@ export class SqliteHelper {
    * @param values - Values bound to SQL placeholders.
    * @returns The query result rows.
    */
-  static query(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): IDatabaseRow[] {
-    return database.prepare(sql).all(...values)
+  static query(
+    database: DatabaseSync,
+    sql: string,
+    ...values: SQLInputValue[]
+  ): IDatabaseRow[] {
+    return database.prepare(sql).all(...values);
   }
 
   /**
@@ -50,8 +57,12 @@ export class SqliteHelper {
    * @param values - Values bound to SQL placeholders.
    * @returns The first row, or undefined when no row matches.
    */
-  static queryOne(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): IDatabaseRow | undefined {
-    return database.prepare(sql).get(...values)
+  static queryOne(
+    database: DatabaseSync,
+    sql: string,
+    ...values: SQLInputValue[]
+  ): IDatabaseRow | undefined {
+    return database.prepare(sql).get(...values);
   }
 
   /**
@@ -60,8 +71,12 @@ export class SqliteHelper {
    * @param sql - The SQL statement.
    * @param values - Values bound to SQL placeholders.
    */
-  static execute(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): void {
-    database.prepare(sql).run(...values)
+  static execute(
+    database: DatabaseSync,
+    sql: string,
+    ...values: SQLInputValue[]
+  ): void {
+    database.prepare(sql).run(...values);
   }
 
   /**
@@ -71,14 +86,14 @@ export class SqliteHelper {
    * @returns The action result.
    */
   static inTransaction<T>(database: DatabaseSync, action: () => T): T {
-    database.exec('BEGIN IMMEDIATE')
+    database.exec("BEGIN IMMEDIATE");
     try {
-      const result = action()
-      database.exec('COMMIT')
-      return result
+      const result = action();
+      database.exec("COMMIT");
+      return result;
     } catch (error) {
-      database.exec('ROLLBACK')
-      throw error
+      database.exec("ROLLBACK");
+      throw error;
     }
   }
 }

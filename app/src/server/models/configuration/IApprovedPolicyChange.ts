@@ -5,40 +5,40 @@ export interface IApprovedPolicyChange {
   /**
    * The unique change request identifier.
    */
-  changeId: string
+  changeId: string;
 
   /**
    * The school whose policy will change.
    */
-  schoolId: string
+  schoolId: string;
 
   /**
    * The current version the approver expected to change.
    */
-  expectedVersion: number
+  expectedVersion: number;
 
   /**
    * The instant the new policy takes effect, with a time zone.
    */
-  effectiveAt: string
+  effectiveAt: string;
 
   /**
    * The person or role that requested the change.
    */
-  requestedBy: string
+  requestedBy: string;
 
   /**
    * The person recorded as approving the change.
    */
-  approvedBy: string
+  approvedBy: string;
 
   /**
    * The recorded reason for the change.
    */
-  reason: string
+  reason: string;
 
   /**
    * The new priority order for invoice categories.
    */
-  categoryPriority: string[]
+  categoryPriority: string[];
 }

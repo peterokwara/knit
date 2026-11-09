@@ -1,10 +1,13 @@
-import path from 'node:path'
-import type { IPaymentIngestionContext } from '../models/ingestion/IPaymentIngestionContext'
-import type { IPaymentEventRecord } from '../models/ingestion/IPaymentEventRecord'
-import { fingerprint, stableJson } from './paymentIngestionValues'
+import path from "node:path";
+import type { IPaymentIngestionContext } from "../models/ingestion/IPaymentIngestionContext";
+import type { IPaymentEventRecord } from "../models/ingestion/IPaymentEventRecord";
+import { fingerprint, stableJson } from "./paymentIngestionValues";
 
 /** Normalized event fields before school and source evidence are attached. */
-export type PaymentEventFields = Omit<IPaymentEventRecord, 'schoolId' | 'fingerprint' | 'sourceFile' | 'rawFingerprint' | 'rawJson'>
+export type PaymentEventFields = Omit<
+  IPaymentEventRecord,
+  "schoolId" | "fingerprint" | "sourceFile" | "rawFingerprint" | "rawJson"
+>;
 
 /**
  * Attach stable identity and source evidence to a normalized event.
@@ -35,13 +38,17 @@ export function makePaymentEventRecord(
     paymentReference: event.paymentReference,
     relatedReference: event.relatedReference,
     issue: event.issue,
-  }
+  };
   return {
     ...event,
     schoolId: context.schoolId,
-    fingerprint: fingerprint(identityDetails === undefined ? normalized : { event: normalized, identityDetails }),
+    fingerprint: fingerprint(
+      identityDetails === undefined
+        ? normalized
+        : { event: normalized, identityDetails },
+    ),
     sourceFile: path.basename(fileName),
     rawFingerprint: fingerprint(raw),
     rawJson: stableJson(raw),
-  }
+  };
 }

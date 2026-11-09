@@ -1,5 +1,5 @@
-import type { IAllocationEvidence } from './IAllocationEvidence'
-import type { IAllocationInput } from './IAllocationInput'
+import type { IAllocationEvidence } from "./IAllocationEvidence";
+import type { IAllocationInput } from "./IAllocationInput";
 
 /**
  * The persistence operations required for immutable allocation evidence.
@@ -12,12 +12,16 @@ export interface IAllocationEvidenceStore {
    * @param policyVersion The applicable school policy version.
    * @returns The stored evidence.
    */
-  record(input: IAllocationInput, effectiveAtMs: number, policyVersion: number): IAllocationEvidence
+  record(
+    input: IAllocationInput,
+    effectiveAtMs: number,
+    policyVersion: number,
+  ): IAllocationEvidence;
 
   /**
    * Find allocation evidence by identifier.
    * @param id The allocation identifier.
    * @returns The evidence, or undefined when absent.
    */
-  get(id: string): IAllocationEvidence | undefined
+  get(id: string): IAllocationEvidence | undefined;
 }
