@@ -1,11 +1,14 @@
-import type { DatabaseSync } from 'node:sqlite'
+import type { DatabaseSync } from "node:sqlite";
 
 /**
  * Create append-only configuration and allocation-evidence tables and guards.
  * @param database - The SQLite connection to initialize before writing data.
  * @param createReference - Creates a temporary database for schema comparison.
  */
-export function initializeSchema(database: DatabaseSync, createReference: () => DatabaseSync): void {
+export function initializeSchema(
+  database: DatabaseSync,
+  createReference: () => DatabaseSync,
+): void {
   const configurationSchema = `
     PRAGMA foreign_keys = ON;
     PRAGMA recursive_triggers = ON;
@@ -102,7 +105,49 @@ export function initializeSchema(database: DatabaseSync, createReference: () => 
     BEFORE UPDATE ON allocation_evidence BEGIN SELECT RAISE(ABORT, 'allocation evidence is immutable'); END;
     CREATE TRIGGER IF NOT EXISTS allocation_evidence_no_delete
     BEFORE DELETE ON allocation_evidence BEGIN SELECT RAISE(ABORT, 'allocation evidence is immutable'); END;
-  `
+  `;
+
+  const allocationPlanSchema = `
+    CREATE TABLE payment_allocation_plans (
+      school_id TEXT NOT NULL,
+      payment_id TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      family_id TEXT NOT NULL,
+      source TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL CHECK(amount_minor > 0),
+      currency TEXT NOT NULL CHECK(length(currency) = 3),
+      effective_at_ms INTEGER NOT NULL,
+      policy_version INTEGER NOT NULL,
+      remainder_minor INTEGER NOT NULL CHECK(remainder_minor >= 0 AND remainder_minor <= amount_minor),
+      remainder_treatment TEXT NOT NULL CHECK(remainder_treatment IN ('none', 'credit', 'refund_hold')),
+      PRIMARY KEY (school_id, payment_id),
+      FOREIGN KEY (school_id, policy_version) REFERENCES school_configuration_versions(school_id, version),
+      CHECK((remainder_minor = 0 AND remainder_treatment = 'none') OR (remainder_minor > 0 AND remainder_treatment != 'none'))
+    ) STRICT;
+
+    CREATE TRIGGER payment_allocation_plans_insert_guard
+    BEFORE INSERT ON payment_allocation_plans BEGIN
+      SELECT RAISE(ABORT, 'allocation plan already exists') WHERE EXISTS (
+        SELECT 1 FROM payment_allocation_plans WHERE school_id = NEW.school_id AND payment_id = NEW.payment_id
+      );
+      SELECT RAISE(ABORT, 'allocation plan policy version is not effective') WHERE NOT EXISTS (
+        SELECT 1 FROM school_configuration_versions v WHERE v.school_id = NEW.school_id
+          AND v.version = NEW.policy_version AND v.effective_at_ms <= NEW.effective_at_ms
+          AND v.effective_at_ms = (SELECT MAX(effective_at_ms) FROM school_configuration_versions WHERE school_id = NEW.school_id AND effective_at_ms <= NEW.effective_at_ms)
+      );
+    END;
+    CREATE TRIGGER payment_allocation_plans_no_update
+    BEFORE UPDATE ON payment_allocation_plans BEGIN SELECT RAISE(ABORT, 'payment allocation plans are immutable'); END;
+    CREATE TRIGGER payment_allocation_plans_no_delete
+    BEFORE DELETE ON payment_allocation_plans BEGIN SELECT RAISE(ABORT, 'payment allocation plans are immutable'); END;
+
+    CREATE TRIGGER school_configuration_versions_plan_guard
+    BEFORE INSERT ON school_configuration_versions WHEN NEW.version > 1 BEGIN
+      SELECT RAISE(ABORT, 'change would affect existing allocation plans') WHERE EXISTS (
+        SELECT 1 FROM payment_allocation_plans WHERE school_id = NEW.school_id AND effective_at_ms >= NEW.effective_at_ms
+      );
+    END;
+  `;
 
   const paymentSchema = `
     CREATE TABLE payment_ingestion_events (
@@ -143,43 +188,81 @@ export function initializeSchema(database: DatabaseSync, createReference: () => 
     BEFORE UPDATE ON payment_ingestion_observations BEGIN SELECT RAISE(ABORT, 'payment observations are immutable'); END;
     CREATE TRIGGER payment_ingestion_observations_no_delete
     BEFORE DELETE ON payment_ingestion_observations BEGIN SELECT RAISE(ABORT, 'payment observations are immutable'); END;
-  `
+  `;
 
   // SQLite stores canonical CREATE statements. Compare with a fresh database
   // before accepting an existing schema, rather than silently recreating guards.
-  const reference = createReference()
+  const reference = createReference();
   try {
-    reference.exec(configurationSchema)
-    const expectedConfiguration = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
-    reference.exec(paymentSchema)
-    const expectedCurrent = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
-    database.exec('PRAGMA foreign_keys = ON; PRAGMA recursive_triggers = ON; BEGIN IMMEDIATE')
+    reference.exec(configurationSchema);
+    const expectedConfiguration = reference
+      .prepare(
+        "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      )
+      .all();
+    reference.exec(paymentSchema);
+    const expectedPaymentSchema = reference
+      .prepare(
+        "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      )
+      .all();
+    reference.exec(allocationPlanSchema);
+    const expectedCurrent = reference
+      .prepare(
+        "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      )
+      .all();
+    database.exec(
+      "PRAGMA foreign_keys = ON; PRAGMA recursive_triggers = ON; BEGIN IMMEDIATE",
+    );
     try {
-      const version = database.prepare('PRAGMA user_version').get()?.user_version
-      if (version !== 0 && version !== 1 && version !== 2) throw new Error('Unsupported configuration schema version')
-      const actual = database.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name").all()
-      const matches = (expected: typeof expectedConfiguration) => actual.length === expected.length && actual.every((item, index) =>
-        item.name === expected[index].name && item.type === expected[index].type && item.sql === expected[index].sql)
+      const version = database
+        .prepare("PRAGMA user_version")
+        .get()?.user_version;
+      if (version !== 0 && version !== 1 && version !== 2 && version !== 3)
+        throw new Error("Unsupported configuration schema version");
+      const actual = database
+        .prepare(
+          "SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )
+        .all();
+      const matches = (expected: typeof expectedConfiguration) =>
+        actual.length === expected.length &&
+        actual.every(
+          (item, index) =>
+            item.name === expected[index].name &&
+            item.type === expected[index].type &&
+            item.sql === expected[index].sql,
+        );
 
       if (version === 0 && actual.length === 0) {
-        database.exec(configurationSchema)
-        database.exec(paymentSchema)
+        database.exec(configurationSchema);
+        database.exec(paymentSchema);
+        database.exec(allocationPlanSchema);
       } else if (version === 0 && matches(expectedConfiguration)) {
-        database.exec(paymentSchema)
+        database.exec(paymentSchema);
+        database.exec(allocationPlanSchema);
       } else if (version === 1 && matches(expectedConfiguration)) {
-        database.exec(paymentSchema)
-      } else if (version === 2 && !matches(expectedCurrent)) {
-        throw new Error('Configuration schema protection mismatch; inspect the database before proceeding')
-      } else if (version === 0 || version === 1) {
-        throw new Error('Configuration schema protection mismatch; inspect the database before proceeding')
+        database.exec(paymentSchema);
+        database.exec(allocationPlanSchema);
+      } else if (version === 2 && matches(expectedPaymentSchema)) {
+        database.exec(allocationPlanSchema);
+      } else if (version === 3 && !matches(expectedCurrent)) {
+        throw new Error(
+          "Configuration schema protection mismatch; inspect the database before proceeding",
+        );
+      } else if (version === 0 || version === 1 || version === 2) {
+        throw new Error(
+          "Configuration schema protection mismatch; inspect the database before proceeding",
+        );
       }
-      database.exec('PRAGMA user_version = 2')
-      database.exec('COMMIT')
+      database.exec("PRAGMA user_version = 3");
+      database.exec("COMMIT");
     } catch (error) {
-      database.exec('ROLLBACK')
-      throw error
+      database.exec("ROLLBACK");
+      throw error;
     }
   } finally {
-    reference.close()
+    reference.close();
   }
 }

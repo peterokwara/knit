@@ -197,15 +197,14 @@ These observations come from the local fixtures. Proposed handling is a starting
 
 Scores use a relative 1–5 scale: impact 5 means a direct effect on correct, explainable balances or a required submission item; effort 5 means the largest implementation cost. The sequence also respects dependencies, so a backend prerequisite can come before a similarly scored screen task.
 
-Setup, protected configuration storage, replay-safe provider ingestion, and exact family matching are complete. Matching decisions are derived from persisted evidence and family references; the system still needs policy allocation, balances, and durable human resolutions.
+Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, and policy-based allocation are complete. A matched payment is allocated to its family's open invoices using the effective school policy; the immutable plan records invoice evidence, remainder treatment, and policy version. The system still needs explainable balances and durable human resolutions.
 
 | Rank | Remaining task | Impact | Effort | Why it ranks here and completion evidence |
 |---|---|---:|---:|---|
-| 1 | Allocate matched money to open invoices under each school's policy; record immutable allocation evidence and the policy version in force. | 5 | 4 | This is the core accounting behavior. Tests must cover invoice ordering, partial payments, overpayments, retries, and the CR-118 noon boundary. Existing allocations must remain explainable after policy changes. |
-| 2 | Return a family's balance for every invoice with the payment, source, and policy trail behind each number. | 5 | 3 | This is the brief's central user outcome. A public service read should return correct fixture balances with a traceable explanation. |
-| 3 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
-| 4 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
-| 5 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
-| 6 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
+| 1 | Return a family's balance for every invoice with the payment, source, and policy trail behind each number. | 5 | 3 | This is the brief's central user outcome. A public service read should return correct fixture balances with a traceable explanation. |
+| 2 | Let a bursar resolve a suspense payment with an actor, timestamp, reason, and idempotent write. | 5 | 3 | The system must give uncertain cases to a capable person and preserve the decision. A retry must not allocate the money twice. |
+| 3 | Build the single bursar screen around family selection, invoice trails, unresolved items, and one safe resolution action. | 4 | 3 | The brief requires one usable React screen. Start after the backend read and resolution seams are stable. |
+| 4 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after the implementation stabilizes. |
+| 5 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
 
-The best next coding slice is rank 1: apply one school's policy to a matched payment and persist the allocation with the policy version in force. Matching now gives allocation a trustworthy family input.
+The next coding slice is rank 1: read a family's invoice balances from the saved payment and allocation evidence, then expose those balances through the bursar-facing service.

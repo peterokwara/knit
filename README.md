@@ -4,7 +4,7 @@ This repository contains work for the Knit senior/lead engineer technical assess
 
 ## Status
 
-The app stores protected school configuration versions, ingests the supplied M-Pesa callbacks and bank exports, and derives exact family matches. Uncertain references and payments without a usable billing currency stay held for review. Automatic invoice allocation, explainable invoice balances, and the bursar's finished screen are not implemented yet.
+The app stores protected school configuration versions, ingests the supplied M-Pesa callbacks and bank exports, derives exact family matches, and provides a policy-based allocation service. The service records an immutable payment plan, invoice allocations, remainder treatment, and the policy version effective at the trusted allocation time. Uncertain references stay held for review. Explainable invoice balances and the bursar's finished screen are not implemented yet, and the fixture-loading command does not run allocations.
 
 ## Run the project locally
 
