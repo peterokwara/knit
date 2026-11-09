@@ -111,7 +111,7 @@ export function initializeSchema(database: DatabaseSync, createReference: () => 
       fingerprint TEXT NOT NULL,
       source TEXT NOT NULL CHECK(source IN ('mpesa', 'bank')),
       source_reference TEXT NOT NULL,
-      event_kind TEXT NOT NULL CHECK(event_kind IN ('payment', 'reversal', 'failed', 'bank_line')),
+      event_kind TEXT NOT NULL CHECK(event_kind IN ('payment', 'reversal', 'failed', 'bank_line', 'stk_result', 'other')),
       classification TEXT NOT NULL CHECK(classification IN ('payment', 'reversal', 'failed', 'settlement', 'fee', 'debit', 'unclassified')),
       amount_minor INTEGER NOT NULL,
       currency TEXT NOT NULL CHECK(length(currency) = 3),

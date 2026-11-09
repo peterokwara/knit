@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import type { SQLInputValue } from 'node:sqlite'
 import type { IDatabaseRow } from '../models/database/IDatabaseRow'
 import { initializeSchema } from './configurationSchema'
 
@@ -38,7 +39,7 @@ export class SqliteHelper {
    * @param values - Values bound to SQL placeholders.
    * @returns The query result rows.
    */
-  static query(database: DatabaseSync, sql: string, ...values: (string | number)[]): IDatabaseRow[] {
+  static query(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): IDatabaseRow[] {
     return database.prepare(sql).all(...values)
   }
 
@@ -49,7 +50,7 @@ export class SqliteHelper {
    * @param values - Values bound to SQL placeholders.
    * @returns The first row, or undefined when no row matches.
    */
-  static queryOne(database: DatabaseSync, sql: string, ...values: (string | number)[]): IDatabaseRow | undefined {
+  static queryOne(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): IDatabaseRow | undefined {
     return database.prepare(sql).get(...values)
   }
 
@@ -59,7 +60,7 @@ export class SqliteHelper {
    * @param sql - The SQL statement.
    * @param values - Values bound to SQL placeholders.
    */
-  static execute(database: DatabaseSync, sql: string, ...values: (string | number)[]): void {
+  static execute(database: DatabaseSync, sql: string, ...values: SQLInputValue[]): void {
     database.prepare(sql).run(...values)
   }
 
