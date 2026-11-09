@@ -1,0 +1,218 @@
+{
+  "school": {
+    "school_id": "sch_mlima",
+    "name": "Mlima Academy (fictional)",
+    "country": "KE",
+    "timezone": "Africa/Nairobi",
+    "billing_currency": "KES",
+    "mpesa_paybill": "888001",
+    "bank_accounts": [
+      {
+        "account_no": "0110234567",
+        "currency": "KES"
+      },
+      {
+        "account_no": "0110234599",
+        "currency": "USD"
+      }
+    ]
+  },
+  "families": [
+    {
+      "family_id": "fam_201",
+      "family_ref": "FAM-201",
+      "learners": [
+        {
+          "admission_no": "ADM-1041",
+          "first_name": "Amani"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_202",
+      "family_ref": "FAM-202",
+      "learners": [
+        {
+          "admission_no": "ADM-1042",
+          "first_name": "Baraka"
+        },
+        {
+          "admission_no": "ADM-1043",
+          "first_name": "Neema"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_203",
+      "family_ref": "FAM-203",
+      "learners": [
+        {
+          "admission_no": "ADM-1044",
+          "first_name": "Zawadi"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_204",
+      "family_ref": "FAM-204",
+      "learners": [
+        {
+          "admission_no": "ADM-1045",
+          "first_name": "Imani"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_205",
+      "family_ref": "FAM-205",
+      "learners": [
+        {
+          "admission_no": "ADM-1046",
+          "first_name": "Erik"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_206",
+      "family_ref": "FAM-206",
+      "learners": [
+        {
+          "admission_no": "ADM-1047",
+          "first_name": "Wema"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_207",
+      "family_ref": "FAM-207",
+      "learners": [
+        {
+          "admission_no": "ADM-1048",
+          "first_name": "Jabari"
+        }
+      ]
+    },
+    {
+      "family_id": "fam_208",
+      "family_ref": "FAM-208",
+      "learners": [
+        {
+          "admission_no": "ADM-1049",
+          "first_name": "Akinyi"
+        }
+      ]
+    }
+  ],
+  "invoices": [
+    {
+      "invoice_id": "INV-2001",
+      "family_id": "fam_201",
+      "admission_no": "ADM-1041",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2002",
+      "family_id": "fam_201",
+      "admission_no": "ADM-1041",
+      "category": "transport",
+      "amount_minor": 900000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2003",
+      "family_id": "fam_202",
+      "admission_no": "ADM-1042",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2004",
+      "family_id": "fam_202",
+      "admission_no": "ADM-1043",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2005",
+      "family_id": "fam_202",
+      "admission_no": "ADM-1043",
+      "category": "lunch",
+      "amount_minor": 600000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2006",
+      "family_id": "fam_203",
+      "admission_no": "ADM-1044",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2007",
+      "family_id": "fam_204",
+      "admission_no": "ADM-1045",
+      "category": "tuition",
+      "amount_minor": 4500000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2008",
+      "family_id": "fam_205",
+      "admission_no": "ADM-1046",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2009",
+      "family_id": "fam_206",
+      "admission_no": "ADM-1047",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2010",
+      "family_id": "fam_207",
+      "admission_no": "ADM-1048",
+      "category": "tuition",
+      "amount_minor": 6000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    },
+    {
+      "invoice_id": "INV-2011",
+      "family_id": "fam_208",
+      "admission_no": "ADM-1049",
+      "category": "tuition",
+      "amount_minor": 3000000,
+      "currency": "KES",
+      "issued_on": "2026-10-20",
+      "due_on": "2026-11-05"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "_comment": "Platform defaults shipped in the codebase. Applied when a school is first created.",
+  "allocation": {
+    "category_priority": [
+      "tuition",
+      "transport",
+      "lunch",
+      "activities"
+    ],
+    "tie_break": [
+      "due_on_asc",
+      "invoice_id_asc"
+    ]
+  },
+  "overpayment": "carry_forward_as_credit",
+  "accepted_currencies": [
+    "KES"
+  ],
+  "fx": {
+    "source": null,
+    "rates": {}
+  },
+  "grace_period_days": 7,
+  "reminders": {
+    "cadence_days": [
+      3,
+      7,
+      14
+    ]
+  },
+  "arrears_after_days_past_due": 30
+}

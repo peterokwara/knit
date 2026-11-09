@@ -1,0 +1,17 @@
+{
+  "change_request": "CR-118",
+  "school_id": "sch_mlima",
+  "requested_by": "Mlima bursar (support ticket #5521)",
+  "approved_by": "ops:wanjiru",
+  "effective_from": "2026-11-03T12:00:00+03:00",
+  "reason": "Clear transport and lunch before tuition so the bus and kitchen suppliers can be paid this week",
+  "patch": {
+    "allocation": {
+      "category_priority": [
+        "transport",
+        "lunch",
+        "tuition"
+      ]
+    }
+  }
+}

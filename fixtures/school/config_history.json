@@ -1,0 +1,74 @@
+[
+  {
+    "school_id": "sch_mlima",
+    "version": 1,
+    "effective_from": "2026-10-01T00:00:00+03:00",
+    "created_by": "ops:wanjiru",
+    "change_reason": "Term 3 onboarding",
+    "config": {
+      "allocation": {
+        "category_priority": [
+          "tuition",
+          "transport",
+          "lunch"
+        ],
+        "tie_break": [
+          "due_on_asc",
+          "invoice_id_asc"
+        ]
+      },
+      "overpayment": "carry_forward_as_credit",
+      "accepted_currencies": [
+        "KES",
+        "USD"
+      ],
+      "fx": {
+        "source": "bursar_entered_daily_rate",
+        "rates": {}
+      },
+      "grace_period_days": 14,
+      "reminders": {
+        "cadence_days": [
+          5,
+          10
+        ]
+      },
+      "arrears_after_days_past_due": 45
+    }
+  },
+  {
+    "school_id": "sch_pwani",
+    "version": 1,
+    "effective_from": "2026-10-01T00:00:00+03:00",
+    "created_by": "ops:otieno",
+    "change_reason": "Term 3 onboarding",
+    "config": {
+      "allocation": {
+        "category_priority": [
+          "tuition",
+          "lunch",
+          "transport"
+        ],
+        "tie_break": [
+          "due_on_asc",
+          "invoice_id_asc"
+        ]
+      },
+      "overpayment": "hold_for_refund",
+      "accepted_currencies": [
+        "KES"
+      ],
+      "fx": {
+        "source": null,
+        "rates": {}
+      },
+      "grace_period_days": 10,
+      "reminders": {
+        "cadence_days": [
+          7
+        ]
+      },
+      "arrears_after_days_past_due": 30
+    }
+  }
+]

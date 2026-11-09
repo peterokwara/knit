@@ -1,0 +1,190 @@
+[
+  {
+    "source": "mpesa",
+    "event": "reversal",
+    "received_at": "2026-11-03T11:30:14Z",
+    "payload": {
+      "TransID": "SKD3XR9Z07",
+      "OriginalTransID": "SKD3XH2B02",
+      "TransTime": "20261103143010",
+      "TransAmount": "70000.00",
+      "ReasonDesc": "Customer reversal request"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T07:15:03Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XH1A01",
+      "TransTime": "20261103101500",
+      "TransAmount": "30000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1041",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "30000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****1123",
+      "FirstName": "GRACE"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "stk.result",
+    "received_at": "2026-11-03T07:12:31Z",
+    "payload": {
+      "MerchantRequestID": "29115-34620561-1",
+      "CheckoutRequestID": "ws_CO_03112026101201837",
+      "ResultCode": 1,
+      "ResultDesc": "The balance is insufficient for the transaction.",
+      "AccountReference": "ADM-1044",
+      "Amount": "60000.00",
+      "MpesaReceiptNumber": null
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T13:02:14Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XL6E05",
+      "TransTime": "20261103160212",
+      "TransAmount": "45000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1045",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "146000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****0845",
+      "FirstName": "LUCY"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T08:03:07Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XH2B02",
+      "TransTime": "20261103110305",
+      "TransAmount": "70000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "FAM-202",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "160000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****4432",
+      "FirstName": "SAMUEL"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T14:15:13Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XM7G07",
+      "TransTime": "20261103171511",
+      "TransAmount": "60000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1O47",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "251000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****2290",
+      "FirstName": "DAVID"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T12:31:07Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XH1A01",
+      "TransTime": "20261103101500",
+      "TransAmount": "30000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1041",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "96000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****1123",
+      "FirstName": "GRACE"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T12:45:12Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XN8H08",
+      "TransTime": "20261103154510",
+      "TransAmount": "5000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1041",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "101000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****1123",
+      "FirstName": "GRACE"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T07:39:46Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XK5D04",
+      "TransTime": "20261103103944",
+      "TransAmount": "60000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1044",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "90000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****8810",
+      "FirstName": "PETER"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T12:30:02Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XJ4C03",
+      "TransTime": "20261103153000",
+      "TransAmount": "6000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1043",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "96000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****4432",
+      "FirstName": "SAMUEL"
+    }
+  },
+  {
+    "source": "mpesa",
+    "event": "c2b.confirmation",
+    "received_at": "2026-11-03T13:05:42Z",
+    "payload": {
+      "TransactionType": "Pay Bill",
+      "TransID": "SKD3XL6F06",
+      "TransTime": "20261103160540",
+      "TransAmount": "45000.00",
+      "BusinessShortCode": "888001",
+      "BillRefNumber": "ADM-1045",
+      "InvoiceNumber": "",
+      "OrgAccountBalance": "191000.00",
+      "ThirdPartyTransID": "",
+      "MSISDN": "2547****0845",
+      "FirstName": "LUCY"
+    }
+  }
+]
