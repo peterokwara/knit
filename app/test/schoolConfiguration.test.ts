@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { describe, it } from 'node:test'
-import type { SchoolConfiguration } from '../src/server/models/schoolConfiguration'
+import type { ISchoolConfigurationStore, SchoolConfiguration } from '../src/server/models/schoolConfiguration'
 import { SchoolConfigurationService } from '../src/server/services/schoolConfigurationService'
 import { SqliteSchoolConfigurationService } from '../src/server/services/sqliteSchoolConfigurationService'
 import { AllocationEvidenceService } from '../src/server/services/allocationEvidenceService'
@@ -68,6 +68,18 @@ function approvedChange() {
 }
 
 void describe('school configuration safety', () => {
+  void it('validates an approval before calling an injected storage dependency', () => {
+    let calls = 0
+    const failIfCalled = () => { calls += 1; throw new Error('Storage should not be called') }
+    const store: ISchoolConfigurationStore = {
+      createInitial: failIfCalled, applyChange: failIfCalled, getChange: failIfCalled,
+      getVersion: failIfCalled, getVersionAt: failIfCalled,
+    }
+    const service = new SchoolConfigurationService(store)
+    assert.throws(() => service.applyChange({ ...approvedChange(), approvedBy: ' ' }), /approvedBy/)
+    assert.equal(calls, 0)
+  })
+
   void it('prevents direct updates, deletes and a default-reset upsert for both schools', () => {
     const { db, config } = setup()
     try {
