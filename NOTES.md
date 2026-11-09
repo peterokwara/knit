@@ -178,3 +178,9 @@ Editable diagram source: [`visuals/stakeholder-perspectives.mmd`](visuals/stakeh
 The [stakeholder map](visuals/stakeholder-map.png) groups the people and organizations by their roles, needs, and concerns. The [influence diagram](visuals/influence-diagram.png) shows how outside conditions and choices affect the family match, invoice allocation, and the bursar's ability to explain the balance. The arrows describe influence, not a prescribed payment flow.
 
 Both images are drawn by [`visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `npm ci --ignore-scripts` in its `tools` directory, then run `node visuals/draw-maps.cjs` from this project.
+
+## Presentation views
+
+- [Struggling moment](visuals/struggling-moment.png): an illustrative wrong-child payment and the impact across the parent, family, bursar, school, and Knit. The brief supplies the failure and possible call to the principal; the sequence and individual reactions are inferred.
+- [Four Forces](visuals/four-forces.png): potential reasons a school might change, and potential reasons it might hesitate. School motivations and habits require interviews; the assessment alone does not establish them.
+- [System boundary and evidence](visuals/system-boundary.png): the supplied records, exercise responsibilities, bursar's required view, and unresolved decisions. The boundary describes the assessment rather than a selected architecture.
