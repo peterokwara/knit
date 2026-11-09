@@ -1,13 +1,17 @@
 import js from '@eslint/js'
 import jsdoc from 'eslint-plugin-jsdoc'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   { ignores: ['dist/**', '.output/**', '.tanstack/**', 'src/routeTree.gen.ts'] },
   js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
     plugins: { jsdoc },
     settings: { jsdoc: { mode: 'typescript' } },
     rules: {
@@ -25,5 +29,9 @@ export default tseslint.config(
         },
       }],
     },
+  },
+  {
+    files: ['**/*.{jsx,tsx}'],
+    ...reactHooks.configs.flat.recommended,
   },
 )

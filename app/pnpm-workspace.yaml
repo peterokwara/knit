@@ -1,0 +1,3 @@
+# esbuild supplies a platform binary; its install script is not needed here.
+allowBuilds:
+  esbuild: false

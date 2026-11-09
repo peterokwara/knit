@@ -167,7 +167,7 @@ The [stakeholder map](visuals/stakeholder-map.png) groups the people and organiz
 
 Parents use an admission or family number as a payment reference. A family can include siblings, so a number that matches the wrong family is an inferred concern. The school chooses its allocation policy; Knit’s team edits and must protect the stored configuration. The brief requires a correct, explainable balance for every invoice.
 
-Both images are drawn by [`docs/visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `npm ci --ignore-scripts` in its `tools` directory, then run `node docs/visuals/draw-maps.cjs` from the repository root.
+Both images are drawn by [`docs/visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `pnpm install --ignore-scripts` in its `tools` directory, then run `node docs/visuals/draw-maps.cjs` from the repository root.
 
 ## Presentation views
 

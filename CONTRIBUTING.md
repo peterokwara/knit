@@ -47,7 +47,7 @@ export function formatFamilyLabel(familyId: string): string {
 }
 ```
 
-The generated `src/routeTree.gen.ts` file is excluded from linting. Local, unexported helpers do not need a JSDoc comment just to satisfy this rule; add one when it helps explain a non-obvious decision. Run `npm run lint` from `app/` before committing.
+The generated `src/routeTree.gen.ts` file is excluded from linting. Local, unexported helpers do not need a JSDoc comment just to satisfy this rule; add one when it helps explain a non-obvious decision. Run `pnpm lint` from `app/` before committing.
 
 ## Creating a pull request
 

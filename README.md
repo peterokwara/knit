@@ -8,24 +8,24 @@ The TanStack Start and SQLite skeleton runs locally. It does not yet import paym
 
 ## Run the project locally
 
-1. Install [Node.js](https://nodejs.org/) 22.13 or newer. npm is included with Node.js. Open a terminal in this project's root folder and check the versions:
+1. Install [Node.js](https://nodejs.org/) 22.13 or newer and [pnpm](https://pnpm.io/installation) 11.20.0. Open a terminal in this project's root folder and check the versions:
 
    ```shell
    node --version
-   npm --version
+   pnpm --version
    ```
 
 2. Enter the application folder and install the exact dependency versions in the lockfile:
 
    ```shell
    cd app
-   npm ci
+   pnpm install --frozen-lockfile
    ```
 
 3. Create the local SQLite database file:
 
    ```shell
-   npm run db:init
+   pnpm db:init
    ```
 
    You should see the SQLite version and `data/knit.sqlite` (inside `app/`). This step creates an empty database; it does not import the fixtures. Node 22 may print an experimental SQLite warning. No separate SQLite server is needed.
@@ -33,7 +33,7 @@ The TanStack Start and SQLite skeleton runs locally. It does not yet import paym
 4. Start the application:
 
    ```shell
-   npm run dev
+   pnpm dev
    ```
 
 5. Open the address printed in the terminal, normally [http://localhost:3000](http://localhost:3000). You should see the School fees placeholder. Open [http://localhost:3000/api/health](http://localhost:3000/api/health) to check the server can open SQLite; it should return `{"status":"ok"}`.
@@ -45,9 +45,9 @@ Leave the terminal open while using the application. Press **Ctrl+C** in that te
 From the `app/` folder, run:
 
 ```shell
-npm run lint
-npm run build
-npm run typecheck
+pnpm lint
+pnpm build
+pnpm typecheck
 ```
 
 The lint command checks code and JSDoc comments. The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`. See [CONTRIBUTING.md](./CONTRIBUTING.md#jsdoc-comments) for the documentation convention.
