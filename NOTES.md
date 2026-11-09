@@ -172,3 +172,9 @@ Control and noise depend on perspective. The school controls its allocation poli
 The assessment says parents use an admission number or family number as a payment reference. A family can include siblings, so a payment number that matches the wrong family is a reasonable inferred concern, not a stated event. The school chooses its allocation policy, while Knit’s team edits and must protect the stored school configuration. The brief’s required outcome is that a bursar can explain the correct balance for every invoice to a parent.
 
 Editable diagram source: [`visuals/stakeholder-perspectives.mmd`](visuals/stakeholder-perspectives.mmd).
+
+## Stakeholder map and influence diagram
+
+The [stakeholder map](visuals/stakeholder-map.png) groups the people and organizations by their roles, needs, and concerns. The [influence diagram](visuals/influence-diagram.png) shows how outside conditions and choices affect the family match, invoice allocation, and the bursar's ability to explain the balance. The arrows describe influence, not a prescribed payment flow.
+
+Both images are drawn by [`visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `npm ci --ignore-scripts` in its `tools` directory, then run `node visuals/draw-maps.cjs` from this project.
