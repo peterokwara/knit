@@ -4,23 +4,27 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { describe, it } from 'node:test'
-import type { ISchoolConfigurationStore, SchoolConfiguration } from '../src/server/models/schoolConfiguration'
+import type { ISchoolConfiguration } from '../src/server/models/configuration/ISchoolConfiguration'
+import type { ISchoolConfigurationStore } from '../src/server/models/configuration/ISchoolConfigurationStore'
+import type { IDatabaseConnection } from '../src/server/models/database/IDatabaseConnection'
 import { SchoolConfigurationService } from '../src/server/services/schoolConfigurationService'
 import { SqliteSchoolConfigurationService } from '../src/server/services/sqliteSchoolConfigurationService'
 import { AllocationEvidenceService } from '../src/server/services/allocationEvidenceService'
 import { SqliteAllocationEvidenceService } from '../src/server/services/sqliteAllocationEvidenceService'
 import { initializeSchema } from '../src/server/utils/configurationSchema'
 
-interface ConfigFixture {
+const createReference = () => new DatabaseSync(':memory:')
+
+interface IConfigFixture {
   school_id: string
   version: number
   effective_from: string
   created_by: string
   change_reason: string
-  config: SchoolConfiguration
+  config: ISchoolConfiguration
 }
 
-interface ChangeFixture {
+interface IChangeFixture {
   change_request: string
   school_id: string
   requested_by: string
@@ -31,14 +35,14 @@ interface ChangeFixture {
 }
 
 const fixturePath = path.resolve(import.meta.dirname, '../../fixtures/school')
-const configs = JSON.parse(readFileSync(path.join(fixturePath, 'config_history.json'), 'utf8')) as ConfigFixture[]
-const change = JSON.parse(readFileSync(path.join(fixturePath, 'change_requests/CR-118.json'), 'utf8')) as ChangeFixture
-const defaults = JSON.parse(readFileSync(path.join(fixturePath, 'platform_defaults.json'), 'utf8')) as SchoolConfiguration
+const configs = JSON.parse(readFileSync(path.join(fixturePath, 'config_history.json'), 'utf8')) as IConfigFixture[]
+const change = JSON.parse(readFileSync(path.join(fixturePath, 'change_requests/CR-118.json'), 'utf8')) as IChangeFixture
+const defaults = JSON.parse(readFileSync(path.join(fixturePath, 'platform_defaults.json'), 'utf8')) as ISchoolConfiguration
 
 function setup() {
   const db = new DatabaseSync(':memory:')
   db.exec('PRAGMA foreign_keys = ON')
-  initializeSchema(db)
+  initializeSchema(db, createReference)
   const store = new SqliteSchoolConfigurationService(db)
   const config = new SchoolConfigurationService(store)
   const evidence = new AllocationEvidenceService(config, new SqliteAllocationEvidenceService(db))
@@ -80,10 +84,36 @@ void describe('school configuration safety', () => {
     assert.equal(calls, 0)
   })
 
+  void it('reads a configuration using an injected database connection', () => {
+    const fixture = configs[0]
+    const database: IDatabaseConnection = {
+      exec() { throw new Error('Unexpected SQL execution') },
+      close() { throw new Error('The caller owns the connection') },
+      prepare(sql) {
+        assert.match(sql, /school_configuration_versions/)
+        return {
+          get(...values) {
+            assert.deepEqual(values, [fixture.school_id, fixture.version])
+            return {
+              school_id: fixture.school_id, version: fixture.version,
+              effective_at_ms: Date.parse(fixture.effective_from),
+              configuration_json: JSON.stringify(fixture.config),
+              created_by: fixture.created_by, change_reason: fixture.change_reason, change_id: null,
+            }
+          },
+          all() { throw new Error('Unexpected query') },
+          run() { throw new Error('Unexpected write') },
+        }
+      },
+    }
+    const service = new SqliteSchoolConfigurationService(database)
+    assert.deepEqual(service.getVersion(fixture.school_id, 1)?.configuration, fixture.config)
+  })
+
   void it('prevents direct updates, deletes and a default-reset upsert for both schools', () => {
     const { db, config } = setup()
     try {
-      initializeSchema(db)
+      initializeSchema(db, createReference)
       for (const row of configs) {
         assert.throws(() => db.prepare('UPDATE school_configuration_versions SET configuration_json = ? WHERE school_id = ?').run(JSON.stringify(defaults), row.school_id), /immutable/)
         assert.throws(() => db.prepare('DELETE FROM school_configuration_versions WHERE school_id = ?').run(row.school_id), /immutable/)
@@ -116,10 +146,10 @@ void describe('school configuration safety', () => {
     const { db } = setup()
     try {
       db.exec('DROP TRIGGER school_configuration_versions_no_update')
-      assert.throws(() => initializeSchema(db), /schema protection mismatch/)
+      assert.throws(() => initializeSchema(db, createReference), /schema protection mismatch/)
       db.exec(`CREATE TRIGGER school_configuration_versions_no_update
         BEFORE UPDATE ON school_configuration_versions BEGIN SELECT 1; END`)
-      assert.throws(() => initializeSchema(db), /schema protection mismatch/)
+      assert.throws(() => initializeSchema(db, createReference), /schema protection mismatch/)
     } finally { db.close() }
   })
 
@@ -130,7 +160,7 @@ void describe('school configuration safety', () => {
         DROP TABLE allocation_evidence;
         DROP TABLE school_configuration_changes;
         DROP TABLE school_configuration_versions;`)
-      assert.throws(() => initializeSchema(db), /schema protection mismatch/)
+      assert.throws(() => initializeSchema(db, createReference), /schema protection mismatch/)
     } finally { db.close() }
   })
 
@@ -229,7 +259,7 @@ void describe('school configuration safety', () => {
     const filename = path.join(directory, 'school.sqlite')
     try {
       const first = new DatabaseSync(filename)
-      initializeSchema(first)
+      initializeSchema(first, createReference)
       const config = new SchoolConfigurationService(new SqliteSchoolConfigurationService(first))
       const evidence = new AllocationEvidenceService(config, new SqliteAllocationEvidenceService(first))
       const fixture = configs[0]
@@ -240,7 +270,7 @@ void describe('school configuration safety', () => {
 
       const reopened = new DatabaseSync(filename)
       try {
-        initializeSchema(reopened)
+        initializeSchema(reopened, createReference)
         const after = new SchoolConfigurationService(new SqliteSchoolConfigurationService(reopened))
         const stored = new AllocationEvidenceService(after, new SqliteAllocationEvidenceService(reopened))
         assert.deepEqual(stored.get('persisted'), before)

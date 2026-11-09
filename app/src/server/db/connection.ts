@@ -13,7 +13,7 @@ export function openDatabase() {
   mkdirSync(directory, { recursive: true })
   const database = new DatabaseSync(path.join(directory, 'knit.sqlite'))
   try {
-    initializeSchema(database)
+    initializeSchema(database, () => new DatabaseSync(':memory:'))
     return database
   } catch (error) {
     database.close()

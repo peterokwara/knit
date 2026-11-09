@@ -1,10 +1,11 @@
-import { DatabaseSync } from 'node:sqlite'
+import type { IDatabaseConnection } from '../models/database/IDatabaseConnection'
 
 /**
  * Create append-only configuration and allocation-evidence tables and guards.
  * @param database - The SQLite connection to initialize before writing data.
+ * @param createReference - Creates a temporary database for schema comparison.
  */
-export function initializeSchema(database: DatabaseSync): void {
+export function initializeSchema(database: IDatabaseConnection, createReference: () => IDatabaseConnection): void {
   const schema = `
     PRAGMA foreign_keys = ON;
     PRAGMA recursive_triggers = ON;
@@ -105,7 +106,7 @@ export function initializeSchema(database: DatabaseSync): void {
 
   // SQLite stores canonical CREATE statements. Compare with a fresh database
   // before accepting an existing schema, rather than silently recreating guards.
-  const reference = new DatabaseSync(':memory:')
+  const reference = createReference()
   try {
     reference.exec(schema)
     const expected = reference.prepare("SELECT name, type, sql FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT LIKE 'sqlite_%'").all()
@@ -114,7 +115,10 @@ export function initializeSchema(database: DatabaseSync): void {
       const version = database.prepare('PRAGMA user_version').get()?.user_version
       if (version !== 0 && version !== 1) throw new Error('Unsupported configuration schema version')
       const lookup = database.prepare('SELECT type, sql FROM sqlite_schema WHERE name = ?')
-      const actual = expected.map((item) => lookup.get(item.name))
+      const actual = expected.map((item) => {
+        if (typeof item.name !== 'string') throw new Error('Invalid schema object name')
+        return lookup.get(item.name)
+      })
       if (version === 0 && actual.every((item) => item === undefined)) {
         database.exec(schema)
       } else if (actual.some((item, index) => !item || item.type !== expected[index].type || item.sql !== expected[index].sql)) {

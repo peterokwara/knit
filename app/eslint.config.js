@@ -17,6 +17,11 @@ export default tseslint.config(
     rules: {
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/require-description': 'error',
+      '@typescript-eslint/naming-convention': [
+        'error',
+        { selector: 'interface', format: ['PascalCase'], custom: { regex: '^I[A-Z]', match: true } },
+        { selector: 'classProperty', modifiers: ['private'], format: ['camelCase'], leadingUnderscore: 'require' },
+      ],
       'jsdoc/require-jsdoc': ['error', {
         publicOnly: true,
         require: {
@@ -33,5 +38,15 @@ export default tseslint.config(
   {
     files: ['**/*.{jsx,tsx}'],
     ...reactHooks.configs.flat.recommended,
+  },
+  {
+    files: ['src/server/models/**/*.ts'],
+    rules: {
+      'jsdoc/require-jsdoc': ['error', {
+        contexts: ['TSInterfaceDeclaration', 'TSPropertySignature', 'TSMethodSignature', 'TSIndexSignature', 'TSTypeAliasDeclaration'],
+        require: { FunctionDeclaration: false },
+      }],
+      'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
+    },
   },
 )

@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { openDatabase } from '../src/server/db/connection'
-import type { ApprovedPolicyChange, InitialSchoolConfiguration, SchoolConfiguration } from '../src/server/models/schoolConfiguration'
+import type { IApprovedPolicyChange } from '../src/server/models/configuration/IApprovedPolicyChange'
+import type { IInitialSchoolConfiguration } from '../src/server/models/configuration/IInitialSchoolConfiguration'
+import type { ISchoolConfiguration } from '../src/server/models/configuration/ISchoolConfiguration'
 import { SchoolConfigurationService } from '../src/server/services/schoolConfigurationService'
 import { SqliteSchoolConfigurationService } from '../src/server/services/sqliteSchoolConfigurationService'
 import { parseInstant, validateConfiguration } from '../src/server/utils/configurationValidation'
@@ -21,13 +23,13 @@ function readJson(file: string): unknown {
   return JSON.parse(readFileSync(file, 'utf8')) as unknown
 }
 
-function readInitialConfigurations(directory: string): InitialSchoolConfiguration[] {
+function readInitialConfigurations(directory: string): IInitialSchoolConfiguration[] {
   const rows = readJson(path.join(directory, 'config_history.json'))
   if (!Array.isArray(rows)) throw new Error('config_history.json must contain an array')
   return rows.map((value: unknown) => {
     const row = object(value, 'configuration fixture')
     if (row.version !== 1) throw new Error('Only initial version 1 is supported in config_history.json')
-    const configuration = object(row.config, 'config') as unknown as SchoolConfiguration
+    const configuration = object(row.config, 'config') as unknown as ISchoolConfiguration
     validateConfiguration(configuration)
     return {
       schoolId: text(row.school_id, 'school_id'), effectiveAt: text(row.effective_from, 'effective_from'),
@@ -36,7 +38,7 @@ function readInitialConfigurations(directory: string): InitialSchoolConfiguratio
   })
 }
 
-function readApprovedChange(directory: string): ApprovedPolicyChange {
+function readApprovedChange(directory: string): IApprovedPolicyChange {
   const row = object(readJson(path.join(directory, 'change_requests/CR-118.json')), 'change request')
   const patch = object(row.patch, 'patch')
   const allocation = object(patch.allocation, 'allocation')

@@ -1,6 +1,6 @@
 # School configuration
 
-Configuration work uses interfaces to describe data and storage needs, services own behavior, and utilities handle SQLite schema and validation. Domain services receive storage dependencies rather than opening database connections. The fixture-loading script composes the services.
+The configuration service uses documented `I`-prefixed model interfaces, services for behavior, and utilities for SQLite schema and validation. `SqliteHelper` is the concrete database helper: it opens and initializes SQLite connections, runs common queries and writes, wraps transactions, and closes connections. The SQLite-backed services use the concrete `DatabaseSync` connection, while the higher-level configuration service still depends on its `ISchoolConfigurationStore` model contract. The fixture-loading script composes the services. Configuration fields such as `category_priority` retain the supplied fixture's spelling because the complete configuration is stored unchanged.
 
 ## Protection and history
 

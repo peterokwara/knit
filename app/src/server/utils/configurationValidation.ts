@@ -1,4 +1,4 @@
-import type { SchoolConfiguration } from '../models/schoolConfiguration'
+import type { ISchoolConfiguration } from '../models/configuration/ISchoolConfiguration'
 
 /**
  * Check that a required identifier or explanation contains non-whitespace text.
@@ -39,7 +39,7 @@ export function validateCategoryPriority(values: string[]): void {
  * Validate essential school settings while retaining every supplied field.
  * @param configuration - The school-specific settings to validate.
  */
-export function validateConfiguration(configuration: SchoolConfiguration): void {
+export function validateConfiguration(configuration: ISchoolConfiguration): void {
   if (!configuration || typeof configuration !== 'object' || !configuration.allocation || typeof configuration.allocation !== 'object') throw new Error('School allocation configuration is required')
   validateCategoryPriority(configuration.allocation.category_priority)
   if (!Array.isArray(configuration.allocation.tie_break) || configuration.allocation.tie_break.length === 0 || configuration.allocation.tie_break.some((value) => typeof value !== 'string' || value.trim().length === 0)) throw new Error('allocation tie_break is required')

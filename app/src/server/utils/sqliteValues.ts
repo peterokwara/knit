@@ -1,6 +1,5 @@
-import type { DatabaseSync, SQLOutputValue } from 'node:sqlite'
-
-type Row = Record<string, SQLOutputValue>
+import type { IDatabaseConnection } from '../models/database/IDatabaseConnection'
+import type { IDatabaseRow } from '../models/database/IDatabaseRow'
 
 /**
  * Read a required text column from a SQLite row.
@@ -8,7 +7,7 @@ type Row = Record<string, SQLOutputValue>
  * @param column - Column name to read.
  * @returns The column's text value.
  */
-export function readText(row: Row, column: string): string {
+export function readText(row: IDatabaseRow, column: string): string {
   const value = row[column]
   if (typeof value !== 'string') throw new Error(`Invalid database column ${column}`)
   return value
@@ -20,7 +19,7 @@ export function readText(row: Row, column: string): string {
  * @param column - Column name to read.
  * @returns The column's safe integer value.
  */
-export function readInteger(row: Row, column: string): number {
+export function readInteger(row: IDatabaseRow, column: string): number {
   const value = row[column]
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) throw new Error(`Invalid database column ${column}`)
   return value
@@ -32,7 +31,7 @@ export function readInteger(row: Row, column: string): number {
  * @param action - Operations to commit together.
  * @returns The value returned by the action.
  */
-export function inTransaction<T>(database: DatabaseSync, action: () => T): T {
+export function inTransaction<T>(database: IDatabaseConnection, action: () => T): T {
   database.exec('BEGIN IMMEDIATE')
   try {
     const result = action()
