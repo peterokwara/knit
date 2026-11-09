@@ -3,11 +3,18 @@ import type { IPaymentEventRecord } from '../models/ingestion/IPaymentEventRecor
 import { fingerprint, parseAmountMinor } from './paymentIngestionValues'
 import { makePaymentEventRecord } from './paymentEventFactory'
 
+/** One bank CSV row paired with the file's header names. */
 interface ICsvRow {
   headers: string[]
   values: string[]
 }
 
+/**
+ * Parse quoted CSV fields and validate the file's row shape.
+ * @param contents CSV text to parse.
+ * @param fileName Source name included in validation errors.
+ * @returns Header names and values for each data row.
+ */
 function parseCsv(contents: string, fileName: string): ICsvRow[] {
   const rows: string[][] = []
   let row: string[] = []
@@ -71,10 +78,21 @@ function parseCsv(contents: string, fileName: string): ICsvRow[] {
   })
 }
 
+/**
+ * Normalize a column heading for alias matching.
+ * @param value Original heading.
+ * @returns Lowercase alphanumeric heading.
+ */
 function normalizeHeader(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
+/**
+ * Find the unique column matching a set of supported aliases.
+ * @param headers CSV column headings.
+ * @param names Normalized aliases for the requested field.
+ * @returns Matching column index, or undefined when absent.
+ */
 function columnIndex(headers: string[], names: string[]): number | undefined {
   const normalized = headers.map(normalizeHeader)
   const matches = normalized.flatMap((header, index) => names.includes(header) ? [index] : [])
@@ -82,15 +100,34 @@ function columnIndex(headers: string[], names: string[]): number | undefined {
   return matches[0]
 }
 
+/**
+ * Read and trim a cell when its column exists.
+ * @param row Parsed CSV row.
+ * @param index Column index.
+ * @returns Trimmed text, or an empty string when the column is absent.
+ */
 function textAt(row: ICsvRow, index: number | undefined): string {
   return index === undefined ? '' : row.values[index].trim()
 }
 
+/**
+ * Parse a populated amount cell into minor units.
+ * @param row Parsed CSV row.
+ * @param index Column index.
+ * @param label Field label for validation errors.
+ * @returns Parsed amount, or zero when the cell is blank or absent.
+ */
 function amountAt(row: ICsvRow, index: number | undefined, label: string): number {
   const value = textAt(row, index)
   return value === '' ? 0 : parseAmountMinor(value, label)
 }
 
+/**
+ * Validate an optional ISO calendar date.
+ * @param value Date text from the statement.
+ * @param label Field label for validation errors.
+ * @returns Valid date text, or null when blank.
+ */
 function validDate(value: string, label: string): string | null {
   if (!value) return null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) !== value) {
@@ -99,6 +136,11 @@ function validDate(value: string, label: string): string | null {
   return value
 }
 
+/**
+ * Extract an admission or family reference from a bank narrative.
+ * @param narrative Bank-provided transaction description.
+ * @returns The exact matching reference, or null when absent.
+ */
 function paymentReference(narrative: string): string | null {
   return /\b(?:ADM|FAM)-[A-Z0-9]+\b/i.exec(narrative)?.[0] ?? null
 }

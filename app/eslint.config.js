@@ -49,4 +49,21 @@ export default tseslint.config(
       'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
     },
   },
+  {
+    files: ['src/server/utils/**/*.ts'],
+    rules: {
+      'jsdoc/require-jsdoc': ['error', {
+        publicOnly: false,
+        contexts: ['TSInterfaceDeclaration', 'TSTypeAliasDeclaration'],
+        require: {
+          ArrowFunctionExpression: false,
+          ClassDeclaration: true,
+          ClassExpression: true,
+          FunctionDeclaration: true,
+          FunctionExpression: false,
+          MethodDefinition: true,
+        },
+      }],
+    },
+  },
 )

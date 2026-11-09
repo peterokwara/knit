@@ -3,18 +3,36 @@ import type { IPaymentEventRecord } from '../models/ingestion/IPaymentEventRecor
 import { fingerprint, parseAmountMinor, parseLocalTransactionTime } from './paymentIngestionValues'
 import { makePaymentEventRecord } from './paymentEventFactory'
 
+/** Parsed JSON object from a provider callback. */
 type JsonObject = Record<string, unknown>
 
+/**
+ * Require a JSON object and reject arrays or primitive values.
+ * @param value Parsed JSON value.
+ * @param label Field label for validation errors.
+ * @returns The value as a JSON object.
+ */
 function object(value: unknown, label: string): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be an object`)
   return value as JsonObject
 }
 
+/**
+ * Require a non-empty string or numeric identifier.
+ * @param value Provider-supplied value.
+ * @param label Field label for validation errors.
+ * @returns Trimmed text representation.
+ */
 function requiredText(value: unknown, label: string): string {
   if ((typeof value !== 'string' && typeof value !== 'number') || String(value).trim() === '') throw new Error(`${label} must be non-empty text`)
   return String(value).trim()
 }
 
+/**
+ * Convert an optional string or numeric identifier to trimmed text.
+ * @param value Provider-supplied value.
+ * @returns Trimmed text, or null when the value is absent or unsupported.
+ */
 function optionalText(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null
   const text = String(value).trim()
