@@ -62,7 +62,9 @@ export class PaymentAllocationService {
       !Array.isArray(acceptedCurrencies) ||
       !acceptedCurrencies.includes(event.currency)
     ) {
-      throw new Error(`Currency ${event.currency} is not accepted by the school`);
+      throw new Error(
+        `Currency ${event.currency} is not accepted by the school`,
+      );
     }
     const familyId = match.familyId;
     if (!familyId) throw new Error("Matched payment has no family");
@@ -82,7 +84,11 @@ export class PaymentAllocationService {
       const amountMinor = Math.min(remaining, outstanding);
       if (amountMinor <= 0) continue;
       allocations.push({
-        id: this.allocationId(event.schoolId, event.eventKey, invoice.invoiceId),
+        id: this.allocationId(
+          event.schoolId,
+          event.eventKey,
+          invoice.invoiceId,
+        ),
         schoolId: event.schoolId,
         paymentId: event.eventKey,
         invoiceId: invoice.invoiceId,
@@ -116,7 +122,10 @@ export class PaymentAllocationService {
     const saved = this._store.recordPlan(
       plan,
       effectiveAtMs,
-      invoices.map(({ invoiceId, amountMinor }) => ({ invoiceId, amountMinor })),
+      invoices.map(({ invoiceId, amountMinor }) => ({
+        invoiceId,
+        amountMinor,
+      })),
     );
     this.assertReplayMatches(saved, event, match);
     return saved;
@@ -168,7 +177,10 @@ export class PaymentAllocationService {
     requireText(event.schoolId, "schoolId");
     requireText(event.eventKey, "eventKey");
     requireText(event.fingerprint, "fingerprint");
-    if (!Number.isSafeInteger(event.netAmountMinor) || event.netAmountMinor <= 0)
+    if (
+      !Number.isSafeInteger(event.netAmountMinor) ||
+      event.netAmountMinor <= 0
+    )
       throw new Error("Payment must have a positive safe net amount");
     if (!/^[A-Z]{3}$/.test(event.currency))
       throw new Error("Payment currency must be a three-letter code");
@@ -192,7 +204,9 @@ export class PaymentAllocationService {
       plan.amountMinor !== event.netAmountMinor ||
       plan.currency !== event.currency
     ) {
-      throw new Error("Payment identity conflicts with its saved allocation plan");
+      throw new Error(
+        "Payment identity conflicts with its saved allocation plan",
+      );
     }
   }
 
@@ -215,8 +229,14 @@ export class PaymentAllocationService {
     },
   ): void {
     if (!Array.isArray(invoices)) throw new Error("invoices must be a list");
-    if (policy.tie_break.some((rule) => rule !== "due_on_asc" && rule !== "invoice_id_asc"))
-      throw new Error("Allocation policy contains an unsupported tie-break rule");
+    if (
+      policy.tie_break.some(
+        (rule) => rule !== "due_on_asc" && rule !== "invoice_id_asc",
+      )
+    )
+      throw new Error(
+        "Allocation policy contains an unsupported tie-break rule",
+      );
     const ids = new Set<string>();
     for (const invoice of invoices) {
       requireText(invoice.invoiceId, "invoiceId");
@@ -224,11 +244,17 @@ export class PaymentAllocationService {
         throw new Error(`Duplicate invoice ${invoice.invoiceId}`);
       ids.add(invoice.invoiceId);
       if (invoice.schoolId !== event.schoolId || invoice.familyId !== familyId)
-        throw new Error(`Invoice ${invoice.invoiceId} is outside the matched family`);
+        throw new Error(
+          `Invoice ${invoice.invoiceId} is outside the matched family`,
+        );
       if (invoice.currency !== event.currency)
-        throw new Error(`Invoice ${invoice.invoiceId} uses a different currency`);
+        throw new Error(
+          `Invoice ${invoice.invoiceId} uses a different currency`,
+        );
       if (!policy.category_priority.includes(invoice.category))
-        throw new Error(`Invoice category ${invoice.category} is missing from policy`);
+        throw new Error(
+          `Invoice category ${invoice.category} is missing from policy`,
+        );
       if (!Number.isSafeInteger(invoice.amountMinor) || invoice.amountMinor < 0)
         throw new Error(`Invoice ${invoice.invoiceId} has an invalid amount`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(invoice.dueOn))

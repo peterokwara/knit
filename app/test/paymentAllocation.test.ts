@@ -219,7 +219,11 @@ void describe("payment allocation", () => {
         () =>
           allocation.allocatePayment(
             paymentToReview,
-            { ...match(paymentToReview), status: "held", holdReason: "unknown_reference" },
+            {
+              ...match(paymentToReview),
+              status: "held",
+              holdReason: "unknown_reference",
+            },
             invoices,
             "2026-11-03T11:00:00+03:00",
           ),

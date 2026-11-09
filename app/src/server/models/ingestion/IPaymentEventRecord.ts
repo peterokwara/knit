@@ -1,96 +1,104 @@
 /** The provider that supplied the event. */
-export type PaymentEventSource = 'mpesa' | 'bank'
+export type PaymentEventSource = "mpesa" | "bank";
 
 /** The source-level event kind retained during normalization. */
-export type PaymentEventKind = 'payment' | 'reversal' | 'failed' | 'bank_line' | 'stk_result' | 'other'
+export type PaymentEventKind =
+  "payment" | "reversal" | "failed" | "bank_line" | "stk_result" | "other";
 
 /** The financial meaning assigned to an imported provider event. */
-export type PaymentEventClassification = 'payment' | 'reversal' | 'failed' | 'settlement' | 'fee' | 'debit' | 'unclassified'
+export type PaymentEventClassification =
+  | "payment"
+  | "reversal"
+  | "failed"
+  | "settlement"
+  | "fee"
+  | "debit"
+  | "unclassified";
 
 /** One normalized provider event and one source observation. */
 export interface IPaymentEventRecord {
   /**
    * The school that owns the event.
    */
-  schoolId: string
+  schoolId: string;
 
   /**
    * Stable provider-specific identity for this event.
    */
-  eventKey: string
+  eventKey: string;
 
   /**
    * Hash of normalized fields that affect the event's financial meaning.
    */
-  fingerprint: string
+  fingerprint: string;
 
   /**
    * Provider that supplied the event.
    */
-  source: PaymentEventSource
+  source: PaymentEventSource;
 
   /**
    * Provider's transaction or statement reference.
    */
-  sourceReference: string
+  sourceReference: string;
 
   /**
    * The provider event kind, retained independently from its classification.
    */
-  eventKind: PaymentEventKind
+  eventKind: PaymentEventKind;
 
   /**
    * Financial meaning used by later reconciliation and allocation steps.
    */
-  classification: PaymentEventClassification
+  classification: PaymentEventClassification;
 
   /**
    * Signed transaction amount in minor currency units.
    */
-  amountMinor: number
+  amountMinor: number;
 
   /**
    * Three-letter ISO currency code.
    */
-  currency: string
+  currency: string;
 
   /**
    * Exact transaction instant when the source supplies a time.
    */
-  occurredAt: string | null
+  occurredAt: string | null;
 
   /**
    * Calendar date when the source supplies only a date.
    */
-  occurredOn: string | null
+  occurredOn: string | null;
 
   /**
    * Parent-entered admission or family reference, when present.
    */
-  paymentReference: string | null
+  paymentReference: string | null;
 
   /**
    * Original transaction reference for a reversal, when present.
    */
-  relatedReference: string | null
+  relatedReference: string | null;
 
   /**
    * Reason the source record must remain outside automatic payment totals.
    */
-  issue: string | null
+  issue: string | null;
 
   /**
    * Name of the source file containing this observation.
    */
-  sourceFile: string
+  sourceFile: string;
 
   /**
    * Hash of the stable serialization of the original source record.
    */
-  rawFingerprint: string
+  rawFingerprint: string;
 
   /**
    * Stable JSON serialization of the original source record.
    */
-  rawJson: string
+  rawJson: string;
 }

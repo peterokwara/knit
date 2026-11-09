@@ -30,7 +30,7 @@ git switch -c fix/2_Duplicate_Callback
 
 ## Checks
 
-Run the relevant checks from the `app/` folder. The README documents setup, lint, build, and type-checking commands. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
+Run the relevant checks from the `app/` folder. Use `pnpm format` to apply the repository's Prettier rules and `pnpm format:check` to check formatting. The README documents setup, lint, build, and type-checking commands. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
 
 ## JSDoc comments
 

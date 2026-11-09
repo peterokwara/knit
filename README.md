@@ -62,6 +62,7 @@ From the `app/` folder, run:
 
 ```shell
 pnpm lint
+pnpm format:check
 pnpm build
 pnpm typecheck
 pnpm test

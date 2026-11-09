@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" \"test/**/*.ts\" \"scripts/**/*.ts\" \"*.json\" \"*.{js,mjs,cjs}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" \"test/**/*.ts\" \"scripts/**/*.ts\" \"*.json\" \"*.{js,mjs,cjs}\"",
     "typecheck": "tsc --noEmit",
     "db:init": "tsx scripts/init-db.ts",
     "lint": "eslint .",
@@ -39,6 +41,7 @@
     "eslint": "^10.14.0",
     "eslint-plugin-jsdoc": "^62.9.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "3.9.10",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",

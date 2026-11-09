@@ -68,7 +68,10 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
       policyVersion: readInteger(row, "policy_version"),
       allocations,
       remainderMinor: readInteger(row, "remainder_minor"),
-      remainderTreatment: readText(row, "remainder_treatment") as IPaymentAllocationPlan["remainderTreatment"],
+      remainderTreatment: readText(
+        row,
+        "remainder_treatment",
+      ) as IPaymentAllocationPlan["remainderTreatment"],
     };
   }
 
@@ -112,7 +115,9 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
         !Number.isSafeInteger(allocated) ||
         allocated + plan.remainderMinor !== plan.amountMinor
       ) {
-        throw new Error("Allocation plan does not account for the full payment");
+        throw new Error(
+          "Allocation plan does not account for the full payment",
+        );
       }
       const invoiceIds = new Set<string>();
       const invoiceAmounts = new Map(
