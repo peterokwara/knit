@@ -73,7 +73,7 @@ The lint command checks code and JSDoc comments. The build generates the TanStac
 
 - `app/src/routes/` contains the React pages and server routes.
 - `app/src/server/models/` defines configuration, allocation-evidence, and ingestion data contracts.
-- `app/src/server/services/` contains configuration, payment-ingestion, and SQLite services.
+- `app/src/server/services/` contains configuration, payment-file retrieval, payment ingestion, and SQLite services.
 - `app/src/server/utils/` contains the SQLite helper, schema guards, and provider adapters.
 - `app/scripts/` contains local setup commands.
 - `app/test/` contains configuration safety and payment-ingestion checks.

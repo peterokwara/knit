@@ -4,7 +4,9 @@ import { DatabaseSync } from 'node:sqlite'
 import { describe, it } from 'node:test'
 import path from 'node:path'
 import { PaymentIngestionService } from '../src/server/services/paymentIngestionService'
+import { PaymentFileRetrievalService } from '../src/server/services/paymentFileRetrievalService'
 import { SqlitePaymentIngestionService } from '../src/server/services/sqlitePaymentIngestionService'
+import type { IPaymentFileReference } from '../src/server/models/ingestion/IPaymentFileReference'
 import { initializeSchema } from '../src/server/utils/configurationSchema'
 
 const context = {
@@ -382,6 +384,30 @@ void describe('payment ingestion', () => {
     const settlement = expected.find((event) => event.classification === 'settlement')
     assert.equal(mpesaNet, 25_100_000)
     assert.equal(settlement?.amountMinor, mpesaNet)
+  })
+
+  void it('retrieves source files separately before importing and reading normalized events', () => {
+    const database = new DatabaseSync(':memory:')
+    initializeSchema(database, createReference)
+    try {
+      const references: IPaymentFileReference[] = [
+        { fileName: 'mpesa_events.json', fileType: 'mpesa-json', location: path.join(fixtureDirectory, 'mpesa_events.json') },
+        { fileName: 'export_2026-11-03.csv', fileType: 'bank-csv', location: path.join(fixtureDirectory, 'bank/export_2026-11-03.csv') },
+        { fileName: 'export_2026-11-04.csv', fileType: 'bank-csv', location: path.join(fixtureDirectory, 'bank/export_2026-11-04.csv') },
+      ]
+      const files = new PaymentFileRetrievalService().retrieveFiles(references)
+      const service = new PaymentIngestionService(new SqlitePaymentIngestionService(database), fixtureContext)
+      service.importFiles(files)
+
+      const events = service.getEvents()
+      assert.equal(files.length, 3)
+      assert.equal(events.length, 17)
+      assert.equal(events.find((event) => event.sourceReference === 'SKD3XH1A01')?.paymentReference, 'ADM-1041')
+      assert.equal(events.filter((event) => event.source === 'mpesa' && event.classification === 'payment')
+        .reduce((total, event) => total + event.netAmountMinor, 0), 25_100_000)
+    } finally {
+      database.close()
+    }
   })
 
   void it('does not persist earlier files when a later file is malformed', () => {
