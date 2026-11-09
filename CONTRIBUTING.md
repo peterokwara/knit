@@ -58,7 +58,7 @@ When a task is ready for review:
 3. Run the relevant checks and describe the changes and results in the pull request.
 4. Request review when a reviewer is available. Address feedback in additional commits.
 
-Keep the commit history as it happened when merging; do not squash it. For a local-only assessment, a branch and its commits can be reviewed without opening a pull request.
+Keep the commit history as it happened when merging; do not squash it.
 
 ## Assessment material
 
