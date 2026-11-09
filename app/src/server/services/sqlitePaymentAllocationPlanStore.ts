@@ -93,6 +93,47 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
   }
 
   /**
+   * Read evidence linked to saved plans for this family and invoice set.
+   * @param schoolId School that owns the invoices.
+   * @param familyId Family that owns the invoices.
+   * @param invoiceIds Stable invoice identifiers.
+   * @returns Allocation lines ordered by time and stable identifiers.
+   */
+  getFamilyEvidence(
+    schoolId: string,
+    familyId: string,
+    invoiceIds: string[],
+  ): IAllocationEvidence[] {
+    if (invoiceIds.length === 0) return [];
+    const placeholders = invoiceIds.map(() => "?").join(", ");
+    const orphan = SqliteHelper.queryOne(
+      this._database,
+      `SELECT evidence.id FROM allocation_evidence evidence
+      LEFT JOIN payment_allocation_plans plan
+        ON plan.school_id = evidence.school_id AND plan.payment_id = evidence.payment_id
+      WHERE evidence.school_id = ? AND evidence.invoice_id IN (${placeholders})
+        AND plan.payment_id IS NULL LIMIT 1`,
+      schoolId,
+      ...invoiceIds,
+    );
+    if (orphan)
+      throw new Error(
+        "Invoice has allocation evidence without a saved family plan; its balance cannot be attributed safely",
+      );
+    return SqliteHelper.query(
+      this._database,
+      `SELECT evidence.* FROM allocation_evidence evidence
+      JOIN payment_allocation_plans plan
+        ON plan.school_id = evidence.school_id AND plan.payment_id = evidence.payment_id
+      WHERE evidence.school_id = ? AND plan.family_id = ? AND evidence.invoice_id IN (${placeholders})
+      ORDER BY evidence.effective_at_ms, evidence.payment_id, evidence.invoice_id, evidence.id`,
+      schoolId,
+      familyId,
+      ...invoiceIds,
+    ).map(toEvidence);
+  }
+
+  /**
    * Atomically record the plan header and every invoice allocation.
    * @param plan Calculated plan, including policy version and remainder.
    * @param effectiveAtMs Trusted plan instant in epoch milliseconds.

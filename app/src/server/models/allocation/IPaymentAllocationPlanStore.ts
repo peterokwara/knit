@@ -1,8 +1,9 @@
 import type { IPaymentAllocationPlan } from "./IPaymentAllocationPlan";
 import type { IAllocationInvoice } from "./IAllocationInvoice";
+import type { IFamilyInvoiceAllocationReader } from "./IFamilyInvoiceAllocationReader";
 
 /** Persistence operations for immutable payment allocation plans. */
-export interface IPaymentAllocationPlanStore {
+export interface IPaymentAllocationPlanStore extends IFamilyInvoiceAllocationReader {
   /**
    * Read the plan already recorded for one provider event.
    * @param schoolId School that owns the payment.
