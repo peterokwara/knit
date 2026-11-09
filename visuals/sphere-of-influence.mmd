@@ -1,0 +1,20 @@
+---
+title: "what shapes the school fee book"
+config:
+  state:
+    nodeSpacing: 35
+    rankSpacing: 45
+---
+stateDiagram-v2
+  direction LR
+  state "Outside surprises<br/>M-Pesa retries or downtime<br/>Bank papers overlap or change<br/>Some lines are not school fees" as noise
+  state "Parent’s choice<br/>writes account reference" as parent
+  state "School’s choice<br/>sets fee allocation rule" as school
+  state "Bursar’s choice<br/>handles unclear payments" as bursar
+  state "Knit’s choices<br/>check records • spot repeats<br/>keep school rules • ask when unsure" as knit
+  state "Family fee book<br/>right balance for every bill<br/>bursar can explain why" as outcome
+  noise --> knit: may make records late or confusing
+  parent --> outcome: reference points to family
+  school --> outcome: rule decides which bill gets paid first
+  bursar --> outcome: human choice clears uncertainty
+  knit --> outcome: checks evidence and keeps reasons
