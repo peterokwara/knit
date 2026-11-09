@@ -15,9 +15,10 @@ The TanStack Start and SQLite skeleton runs locally. It does not yet import paym
    npm --version
    ```
 
-2. Install the exact dependency versions in the lockfile:
+2. Enter the application folder and install the exact dependency versions in the lockfile:
 
    ```shell
+   cd app
    npm ci
    ```
 
@@ -27,7 +28,7 @@ The TanStack Start and SQLite skeleton runs locally. It does not yet import paym
    npm run db:init
    ```
 
-   You should see the SQLite version and `data/knit.sqlite`. This step creates an empty database; it does not import the fixtures. Node 22 may print an experimental SQLite warning. No separate SQLite server is needed.
+   You should see the SQLite version and `data/knit.sqlite` (inside `app/`). This step creates an empty database; it does not import the fixtures. Node 22 may print an experimental SQLite warning. No separate SQLite server is needed.
 
 4. Start the application:
 
@@ -41,21 +42,23 @@ Leave the terminal open while using the application. Press **Ctrl+C** in that te
 
 ## Check the project
 
+From the `app/` folder, run:
+
 ```shell
 npm run build
 npm run typecheck
 ```
 
-The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `tsconfig.json`.
+The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`.
 
 ## Project folders
 
-- `src/routes/` contains the React pages and server routes.
-- `src/server/db/` contains the server-only SQLite connection.
-- `scripts/` contains local setup commands.
-- `data/` holds the local database, which Git ignores.
+- `app/src/routes/` contains the React pages and server routes.
+- `app/src/server/db/` contains the server-only SQLite connection.
+- `app/scripts/` contains local setup commands.
+- `app/data/` holds the local database, which Git ignores.
 - `fixtures/` holds the assessment's example data when available locally.
-- `visuals/` holds problem-framing diagrams and their drawing source.
+- `docs/NOTES.md` holds problem-solving notes; `docs/visuals/` holds diagrams and their drawing source.
 
 ## Contributing
 
@@ -63,8 +66,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the working and commit conventions 
 
 ## Project material
 
-- [Problem-solving notes](./NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
-- [Visuals](./visuals/) contain the problem-framing diagrams and their drawing source.
+- [Problem-solving notes](./docs/NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
+- [Visuals](./docs/visuals/) contain the problem-framing diagrams and their drawing source.
 - `fixtures/` contains the assessment's example data when available locally.
 
 ## License

@@ -30,7 +30,7 @@ git switch -c fix/2_Duplicate_Callback
 
 ## Checks
 
-Run the checks relevant to each change. Once the application exists, document the setup, type-checking, and test commands in the README. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
+Run the relevant checks from the `app/` folder. The README documents setup, build, and type-checking commands. Check that payment and configuration changes preserve the behavior required by the assessment, including replay safety and policy history.
 
 ## Creating a pull request
 

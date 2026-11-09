@@ -1,7 +1,7 @@
 'use strict';
 // Run after cloning statechart-art to .work/statechart-art and npm ci in its tools directory.
 const path = require('path');
-const root = path.resolve(__dirname, '../.work/statechart-art');
+const root = path.resolve(__dirname, '../../.work/statechart-art');
 const { plate } = require(path.join(root, 'tools/lib/storybook'));
 const { person } = require(path.join(root, 'tools/lib/people'));
 const D = require(path.join(root, 'tools/lib/draw'));

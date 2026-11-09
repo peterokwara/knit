@@ -2,7 +2,8 @@ node_modules/
 .output/
 dist/
 .tanstack/
-data/*.sqlite
-data/*.sqlite-*
+/app/data/*.sqlite
+/app/data/*.sqlite-*
+.work/
 .env
 .env.local

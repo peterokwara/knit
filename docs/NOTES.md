@@ -161,26 +161,51 @@ Noise factors are conditions Knit cannot directly set. Control factors are choic
 
 Control and noise depend on perspective. The school controls its allocation policy; Knit controls how its system stores and applies that policy. The parent controls the reference entered; the bursar controls the manual resolution decision. Provider, bank, and network behavior sits outside Knit’s direct control. The hand-drawn diagram below shows how these factors affect the required outcome without mapping a payment-processing flow.
 
-## Hand-drawn sphere-of-influence diagram
-
-[`visuals/sphere-of-influence.png`](visuals/sphere-of-influence.png) is rendered from [`visuals/sphere-of-influence.mmd`](visuals/sphere-of-influence.mmd) with the statechart-art repo’s npm-based Mermaid layout and hand-drawn renderer. Each person stands beside the choice they own. Every arrow has a label, and the subtitle explains that arrow labels describe how a factor affects the fee book.
-
-## Stakeholders and what matters to them
-
-[`visuals/stakeholder-perspectives.png`](visuals/stakeholder-perspectives.png) revisits the first people map. The four illustrated people align with parent, learner/family, bursar, and school. Knit and payment providers appear as labeled organizations. Each card states the actor’s need, choice, or relevant risk; every arrow says how that perspective affects the required invoice-balance outcome. The diagram marks brief facts separately from inferred risks.
-
-The assessment says parents use an admission number or family number as a payment reference. A family can include siblings, so a payment number that matches the wrong family is a reasonable inferred concern, not a stated event. The school chooses its allocation policy, while Knit’s team edits and must protect the stored school configuration. The brief’s required outcome is that a bursar can explain the correct balance for every invoice to a parent.
-
-Editable diagram source: [`visuals/stakeholder-perspectives.mmd`](visuals/stakeholder-perspectives.mmd).
-
 ## Stakeholder map and influence diagram
 
 The [stakeholder map](visuals/stakeholder-map.png) groups the people and organizations by their roles, needs, and concerns. The [influence diagram](visuals/influence-diagram.png) shows how outside conditions and choices affect the family match, invoice allocation, and the bursar's ability to explain the balance. The arrows describe influence, not a prescribed payment flow.
 
-Both images are drawn by [`visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `npm ci --ignore-scripts` in its `tools` directory, then run `node visuals/draw-maps.cjs` from this project.
+Parents use an admission or family number as a payment reference. A family can include siblings, so a number that matches the wrong family is an inferred concern. The school chooses its allocation policy; Knit’s team edits and must protect the stored configuration. The brief requires a correct, explainable balance for every invoice.
+
+Both images are drawn by [`docs/visuals/draw-maps.cjs`](visuals/draw-maps.cjs), using the hand-drawn tools from the statechart-art repository. To regenerate them, clone that repository to `.work/statechart-art`, run `npm ci --ignore-scripts` in its `tools` directory, then run `node docs/visuals/draw-maps.cjs` from the repository root.
 
 ## Presentation views
 
 - [Struggling moment](visuals/struggling-moment.png): an illustrative wrong-child payment and the impact across the parent, family, bursar, school, and Knit. The brief supplies the failure and possible call to the principal; the sequence and individual reactions are inferred.
 - [Four Forces](visuals/four-forces.png): potential reasons a school might change, and potential reasons it might hesitate. School motivations and habits require interviews; the assessment alone does not establish them.
 - [System boundary and evidence](visuals/system-boundary.png): the supplied records, exercise responsibilities, bursar's required view, and unresolved decisions. The boundary describes the assessment rather than a selected architecture.
+
+## Fixture observations and decisions to make
+
+These observations come from the local fixtures. Proposed handling is a starting point, not an implemented result.
+
+| Record or condition | What we found | Proposed handling or question |
+|---|---|---|
+| M-Pesa duplicate | `SKD3XH1A01` appears twice; the balance field and receipt time differ. | Preserve both observations, but recognize one transaction. Define what to do if meaningful fields conflict. |
+| Reversal before payment | Reversal `SKD3XR9Z07` refers to `SKD3XH2B02`, which appears later in the file. | Retain and link it even if the original arrives later; avoid allocating reversed money. |
+| Failed STK result | An `stk.result` has `ResultCode: 1` and no receipt number. | Do not treat this failed attempt as received money. |
+| Similar payments | `SKD3XL6E05` and `SKD3XL6F06` are both KES 45,000 for `ADM-1045`, but have different transaction IDs. | Do not discard one solely because amount and reference match; examine overpayment treatment. |
+| Mistyped reference | `ADM-1O47` contains the letter O; `ADM-1047` exists. | Hold for human review rather than silently guessing the intended learner. |
+| Overlapping bank exports | `FT26307QWE45` appears in both files with different number formatting. | Parse money safely and count the bank transaction once. |
+| Bank entries that are not parent fees | The CSVs contain service charges and an M-Pesa settlement. | Keep evidence and distinguish charges and settlement from an additional parent payment. |
+| USD transfer | `SWIFT-INW-88213` is USD 465; billing is in KES and the configured FX rates are empty. | Decide and document how to hold or process it; do not invent an exchange rate. |
+| Policy change | `CR-118` changes priority at noon Nairobi time on 3 November. | Preserve prior allocations under their original policy version and define the payment-time rule, including the exact boundary. |
+| School-specific settings | Mlima, Pwani and the platform defaults differ. | A migration or default update must not silently replace existing school settings. |
+| Family with siblings | `FAM-202` has two learners and multiple invoices. | Match the family first and apply its school's policy across its open invoices. |
+
+## Candidate work, ranked for impact and effort
+
+The order is a planning judgment, not a substitute for the brief: all Part A requirements still need coverage. Part B review and the required AI-usage notes also need time.
+
+| Rank | Smallest useful task | Impact / effort | Evidence of completion |
+|---|---|---|---|
+| 1 | Inspect fixtures and write down risks and decisions. | High / small | The table above and a short list of unresolved rules. |
+| 2 | Set up strict TypeScript, TanStack Start, SQLite and a runnable skeleton. | Enabler / small | One documented command starts the application and opens the database. |
+| 3 | Protect school-specific configuration and record versions; demonstrate a bad reset is caught. | Very high / medium | A test or script proves the reset is detected; both schools retain their own settings. |
+| 4 | Capture provider evidence and make repeated ingestion safe. | Very high / medium | Replaying and shuffling fixtures preserves the correct results, including reversals and overlapping exports. |
+| 5 | Allocate under the applicable policy and explain invoice balances. | Very high / medium | Each balance traces to money, source and policy version; policy changes do not silently rewrite history. |
+| 6 | Hold uncertain items and resolve one safely. | High / medium | A bursar decision is auditable and a retry does not apply it twice. |
+| 7 | Build the single bursar screen. | Required / medium | Select a family, inspect invoice trails and unresolved items, and resolve one. |
+| 8 | Document trade-offs and AI usage; complete Part B review. | Required / medium | Required solution notes and review are present and specific. |
+
+Tasks 3–6 are closely connected. Start with a narrow example, then expand to all fixtures; a single example is not the finished assessment.
