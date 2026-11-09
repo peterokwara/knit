@@ -14,6 +14,11 @@ export interface IIngestedPaymentEvent {
   eventKey: string
 
   /**
+   * Normalized event fingerprint that distinguishes conflicting variants.
+   */
+  fingerprint: string
+
+  /**
    * Provider that supplied the event.
    */
   source: PaymentEventSource

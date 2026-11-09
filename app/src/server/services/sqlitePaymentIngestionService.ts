@@ -139,6 +139,7 @@ export class SqlitePaymentIngestionService implements IPaymentIngestionStore {
     if (!['payment', 'reversal', 'failed', 'bank_line', 'stk_result', 'other'].includes(eventKind)) throw new Error('Invalid payment event kind in database')
     return {
       schoolId: readText(row, 'school_id'), eventKey, source: paymentSource(readText(row, 'source')),
+      fingerprint,
       sourceReference: readText(row, 'source_reference'), eventKind: eventKind as IIngestedPaymentEvent['eventKind'],
       classification: eventClassification(readText(row, 'classification')), amountMinor: readInteger(row, 'amount_minor'),
       netAmountMinor: readInteger(row, 'amount_minor'),

@@ -4,7 +4,7 @@ This repository contains work for the Knit senior/lead engineer technical assess
 
 ## Status
 
-The app stores protected school configuration versions and ingests the supplied M-Pesa callbacks and bank exports. Automatic allocation, explainable invoice balances, and the bursar's finished screen are not implemented yet.
+The app stores protected school configuration versions, ingests the supplied M-Pesa callbacks and bank exports, and derives exact family matches. Uncertain references and payments without a usable billing currency stay held for review. Automatic invoice allocation, explainable invoice balances, and the bursar's finished screen are not implemented yet.
 
 ## Run the project locally
 
@@ -44,7 +44,7 @@ The app stores protected school configuration versions and ingests the supplied 
    pnpm payments:load
    ```
 
-   This command is safe to rerun. It preserves provider evidence and does not allocate payments to families or invoices.
+   This command is safe to rerun. It preserves provider evidence, reports exact family matches and held cases, and does not allocate payments to invoices.
 
 4. Start the application:
 
@@ -73,7 +73,7 @@ The lint command checks code and JSDoc comments. The build generates the TanStac
 
 - `app/src/routes/` contains the React pages and server routes.
 - `app/src/server/models/` defines configuration, allocation-evidence, and ingestion data contracts.
-- `app/src/server/services/` contains configuration, payment-file retrieval, payment ingestion, and SQLite services.
+- `app/src/server/services/` contains configuration, payment-file retrieval, payment ingestion, family matching, and SQLite services.
 - `app/src/server/utils/` contains the SQLite helper, schema guards, and provider adapters.
 - `app/scripts/` contains local setup commands.
 - `app/test/` contains configuration safety and payment-ingestion checks.
