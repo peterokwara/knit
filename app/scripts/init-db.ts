@@ -1,9 +1,9 @@
-import { openDatabase } from '../src/server/db/connection'
+import { SqliteHelper } from '../src/server/utils/sqliteHelper'
 
-const database = openDatabase()
+const database = SqliteHelper.openConnection()
 try {
-  const row = database.prepare('SELECT sqlite_version() AS version').get()
+  const row = SqliteHelper.queryOne(database, 'SELECT sqlite_version() AS version')
   console.log(`SQLite ${String(row?.version)} is ready at data/knit.sqlite`)
 } finally {
-  database.close()
+  SqliteHelper.closeConnection(database)
 }

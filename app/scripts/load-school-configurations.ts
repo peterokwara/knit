@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { openDatabase } from '../src/server/db/connection'
+import { SqliteHelper } from '../src/server/utils/sqliteHelper'
 import type { IApprovedPolicyChange } from '../src/server/models/configuration/IApprovedPolicyChange'
 import type { IInitialSchoolConfiguration } from '../src/server/models/configuration/IInitialSchoolConfiguration'
 import type { ISchoolConfiguration } from '../src/server/models/configuration/ISchoolConfiguration'
@@ -55,7 +55,7 @@ function readApprovedChange(directory: string): IApprovedPolicyChange {
 const fixtureDirectory = path.resolve(import.meta.dirname, '../../fixtures/school')
 const initialConfigurations = readInitialConfigurations(fixtureDirectory)
 const approvedChange = readApprovedChange(fixtureDirectory)
-const database = openDatabase()
+const database = SqliteHelper.openConnection()
 try {
   const store = new SqliteSchoolConfigurationService(database)
   const service = new SchoolConfigurationService(store)
@@ -84,5 +84,5 @@ try {
   }
   console.log('School configuration fixtures and CR-118 are present; existing versions were not overwritten.')
 } finally {
-  database.close()
+  SqliteHelper.closeConnection(database)
 }

@@ -5,13 +5,13 @@ export const Route = createFileRoute('/api/health')({
     handlers: {
       GET: async () => {
         // Import the database only inside the server handler.
-        const { openDatabase } = await import('../server/db/connection')
-        const database = openDatabase()
+        const { SqliteHelper } = await import('../server/utils/sqliteHelper')
+        const database = SqliteHelper.openConnection()
         try {
-          database.prepare('SELECT 1').get()
+          SqliteHelper.queryOne(database, 'SELECT 1')
           return Response.json({ status: 'ok' })
         } finally {
-          database.close()
+          SqliteHelper.closeConnection(database)
         }
       },
     },

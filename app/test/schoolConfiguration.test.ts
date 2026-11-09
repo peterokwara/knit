@@ -6,12 +6,12 @@ import { DatabaseSync } from 'node:sqlite'
 import { describe, it } from 'node:test'
 import type { ISchoolConfiguration } from '../src/server/models/configuration/ISchoolConfiguration'
 import type { ISchoolConfigurationStore } from '../src/server/models/configuration/ISchoolConfigurationStore'
-import type { IDatabaseConnection } from '../src/server/models/database/IDatabaseConnection'
 import { SchoolConfigurationService } from '../src/server/services/schoolConfigurationService'
 import { SqliteSchoolConfigurationService } from '../src/server/services/sqliteSchoolConfigurationService'
 import { AllocationEvidenceService } from '../src/server/services/allocationEvidenceService'
 import { SqliteAllocationEvidenceService } from '../src/server/services/sqliteAllocationEvidenceService'
 import { initializeSchema } from '../src/server/utils/configurationSchema'
+import { SqliteHelper } from '../src/server/utils/sqliteHelper'
 
 const createReference = () => new DatabaseSync(':memory:')
 
@@ -84,30 +84,15 @@ void describe('school configuration safety', () => {
     assert.equal(calls, 0)
   })
 
-  void it('reads a configuration using an injected database connection', () => {
-    const fixture = configs[0]
-    const database: IDatabaseConnection = {
-      exec() { throw new Error('Unexpected SQL execution') },
-      close() { throw new Error('The caller owns the connection') },
-      prepare(sql) {
-        assert.match(sql, /school_configuration_versions/)
-        return {
-          get(...values) {
-            assert.deepEqual(values, [fixture.school_id, fixture.version])
-            return {
-              school_id: fixture.school_id, version: fixture.version,
-              effective_at_ms: Date.parse(fixture.effective_from),
-              configuration_json: JSON.stringify(fixture.config),
-              created_by: fixture.created_by, change_reason: fixture.change_reason, change_id: null,
-            }
-          },
-          all() { throw new Error('Unexpected query') },
-          run() { throw new Error('Unexpected write') },
-        }
-      },
+  void it('opens SQLite through the concrete helper and installs the protected schema', () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'knit-helper-'))
+    const database = SqliteHelper.openConnection(path.join(directory, 'knit.sqlite'))
+    try {
+      assert.equal(SqliteHelper.query(database, 'SELECT name FROM sqlite_schema WHERE name = ?', 'school_configuration_versions').length, 1)
+    } finally {
+      SqliteHelper.closeConnection(database)
+      rmSync(directory, { recursive: true, force: true })
     }
-    const service = new SqliteSchoolConfigurationService(database)
-    assert.deepEqual(service.getVersion(fixture.school_id, 1)?.configuration, fixture.config)
   })
 
   void it('prevents direct updates, deletes and a default-reset upsert for both schools', () => {

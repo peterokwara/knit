@@ -1,11 +1,11 @@
-import type { IDatabaseConnection } from '../models/database/IDatabaseConnection'
+import type { DatabaseSync } from 'node:sqlite'
 
 /**
  * Create append-only configuration and allocation-evidence tables and guards.
  * @param database - The SQLite connection to initialize before writing data.
  * @param createReference - Creates a temporary database for schema comparison.
  */
-export function initializeSchema(database: IDatabaseConnection, createReference: () => IDatabaseConnection): void {
+export function initializeSchema(database: DatabaseSync, createReference: () => DatabaseSync): void {
   const schema = `
     PRAGMA foreign_keys = ON;
     PRAGMA recursive_triggers = ON;
