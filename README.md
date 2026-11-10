@@ -92,6 +92,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the working and commit conventions 
 ## Project material
 
 - [Problem-solving notes](./docs/NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
+- [Payment journey](./docs/visuals/payment-journey.md) diagrams ingestion, matching, review, allocation, and reversals.
 - [Visuals](./docs/visuals/) contain the problem-framing diagrams and their drawing source.
 - [Configuration design](./docs/configuration.md) explains the policy history and its limits.
 - [Payment ingestion](./docs/payment-ingestion.md) explains replay safety, event evidence, and current limits.

@@ -27,6 +27,8 @@ The main decision-making perspectives are the parent, the school/bursar, and Kni
 
 Parent pays → provider reports the transaction → Knit validates and matches it → school policy determines invoice allocation → bursar can inspect and explain the resulting balance.
 
+The [payment journey diagram](visuals/payment-journey.md) shows the implemented path, including duplicate handling, human review, unsupported currency, policy versions, and reversals.
+
 The assessment describes Knit as AI revenue infrastructure, including invoice generation, WhatsApp messaging, payment plans, and reconciliation. This exercise does not require building an AI model. It focuses on reliable ingestion, allocation, configuration history, and a bursar screen. The AI context explains the product; the technical task tests the safety and explainability of its payment records.
 
 ## Trust principle
@@ -193,15 +195,8 @@ These observations come from the local fixtures. Proposed handling is a starting
 | School-specific settings | Mlima, Pwani and the platform defaults differ. | A migration or default update must not silently replace existing school settings. |
 | Family with siblings | `FAM-202` has two learners and multiple invoices. | Match the family first and apply its school's policy across its open invoices. |
 
-## Remaining work, ranked by impact and effort
-
-Scores use a relative 1–5 scale: impact 5 means a direct effect on correct, explainable balances or a required submission item; effort 5 means the largest implementation cost. The sequence also respects dependencies, so a backend prerequisite can come before a similarly scored screen task.
+## Implementation and submission status
 
 Setup, protected configuration storage, replay-safe provider ingestion, exact family matching, policy-based allocation, explainable family invoice balances, fixture reconciliation, durable human resolutions, and the single-screen bursar workspace are implemented. `PaymentReconciliationService` connects the existing services while keeping file retrieval separate. It leaves held and zero-net payments out of allocation and returns every configured family's invoice balances with saved source and policy evidence. `PaymentReviewResolutionService` records an immutable bursar decision and allocates only eligible positive payments in the school's billing currency. The screen starts with family search and a chronological review queue, keeps blocked records separate, and shows source and policy evidence with each invoice balance. Resolution previews use the allocator's calculation path, then the service verifies that both the policy version and invoice allocation amounts still match before it records the decision. Saved decisions that lack an allocation plan remain visible for a safe retry. The app uses a clearly labeled demo bursar identity because authentication is outside the assessment scope.
 
-| Rank | Remaining task | Impact | Effort | Why it ranks here and completion evidence |
-|---|---|---:|---:|---|
-| 1 | Write `SOLUTION.md` and `REVIEW.md`, including trade-offs, fixture decisions, AI-use notes, and the separate Part B review. | 4 | 2 | These are explicit submission items. Capture decisions as we make them; complete the final concise review after implementation stabilizes. |
-| 2 | Record the 15–20 minute walkthrough. | 5 | 2 | The brief says reviewers watch this before reading the code. Record after the build and review are settled. |
-
-The next coding slice is rank 1: complete the written submission notes and review.
+The written submission is in [SOLUTION.md](../SOLUTION.md), including fixture decisions, limitations, and AI use. The separate Part B review is in [REVIEW.md](../REVIEW.md). The walkthrough videos were recorded and uploaded separately. Before sending the submission, check that the email contains working repository and video links.
