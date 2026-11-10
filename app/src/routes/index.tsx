@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { IPaymentAllocationPlan } from "../server/models/allocation/IPaymentAllocationPlan";
+import { cn } from "cn";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "../components/ui/empty";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "../components/ui/field";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -250,11 +264,11 @@ function BursarScreen() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b bg-white">
+    <main className="min-h-screen bg-muted/30 text-foreground">
+      <header className="border-b bg-background">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5">
           <div>
-            <p className="text-sm font-medium text-slate-500">
+            <p className="text-sm font-medium text-muted-foreground">
               {workspace?.schoolName ?? "School fees"}
             </p>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -268,7 +282,7 @@ function BursarScreen() {
       </header>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-        <section className="space-y-5" aria-label="Family accounts">
+        <section className="flex flex-col gap-5" aria-label="Family accounts">
           <Card>
             <CardHeader>
               <CardTitle>Find a family</CardTitle>
@@ -277,7 +291,7 @@ function BursarScreen() {
                 name.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
               <Input
                 aria-label="Search families"
                 placeholder="e.g. FAM-201, ADM-1041, Amani"
@@ -285,7 +299,7 @@ function BursarScreen() {
                 onChange={(event) => setQuery(event.target.value)}
               />
               <div
-                className="max-h-60 space-y-2 overflow-y-auto"
+                className="max-h-60 flex flex-col gap-2 overflow-y-auto"
                 role="listbox"
                 aria-label="Family search results"
               >
@@ -296,14 +310,19 @@ function BursarScreen() {
                     role="option"
                     aria-selected={selectedFamilyId === family.familyId}
                     onClick={() => setSelectedFamilyId(family.familyId)}
-                    className={`w-full rounded-lg border px-4 py-3 text-left transition ${selectedFamilyId === family.familyId ? "border-blue-700 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"}`}
+                    className={cn(
+                      "w-full rounded-lg border px-4 py-3 text-left transition",
+                      selectedFamilyId === family.familyId
+                        ? "border-primary bg-accent"
+                        : "border-border bg-background hover:bg-accent",
+                    )}
                   >
                     <span className="flex items-center justify-between gap-3">
                       <span>
                         <span className="block font-medium">
                           {family.familyReference}
                         </span>
-                        <span className="text-sm text-slate-600">
+                        <span className="text-sm text-muted-foreground">
                           {family.learners
                             .map(
                               (learner) =>
@@ -313,7 +332,7 @@ function BursarScreen() {
                         </span>
                       </span>
                       <span className="text-right text-sm">
-                        <span className="block text-slate-500">
+                        <span className="block text-muted-foreground">
                           Outstanding
                         </span>
                         <span className="font-semibold">
@@ -324,7 +343,7 @@ function BursarScreen() {
                   </button>
                 ))}
                 {filteredFamilies.length === 0 && (
-                  <p className="py-4 text-sm text-slate-500">
+                  <p className="py-4 text-sm text-muted-foreground">
                     No family matches that search.
                   </p>
                 )}
@@ -354,7 +373,7 @@ function BursarScreen() {
                     .join(", ")}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 {selectedFamily.invoices.map((invoice) => (
                   <article
                     key={invoice.invoiceId}
@@ -365,7 +384,7 @@ function BursarScreen() {
                         <h3 className="font-medium">
                           {humanize(invoice.category)} · {invoice.invoiceId}
                         </h3>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                           Due {date(invoice.dueOn)}
                         </p>
                       </div>
@@ -394,7 +413,7 @@ function BursarScreen() {
                     {invoice.payments.length > 0 && (
                       <Separator className="my-4" />
                     )}
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                       {invoice.payments.map((payment, index) => (
                         <div
                           key={`${payment.reference}-${index}`}
@@ -406,20 +425,20 @@ function BursarScreen() {
                               : "Bank transfer"}{" "}
                             · {payment.reference}
                           </p>
-                          <p className="text-slate-600">
+                          <p className="text-muted-foreground">
                             {money(payment.amountMinor, invoice.currency)} ·{" "}
                             {dateTime(payment.date)} · policy v
                             {payment.policyVersion}
                           </p>
                           {payment.decision && (
-                            <p className="mt-1 text-slate-600">
+                            <p className="mt-1 text-muted-foreground">
                               Family decision by Assessment demo bursar on{" "}
                               {dateTime(payment.decision.resolvedAt)}:{" "}
                               {payment.decision.reason}
                             </p>
                           )}
                           {payment.raw.length > 0 && (
-                            <details className="mt-1 text-slate-500">
+                            <details className="mt-1 text-muted-foreground">
                               <summary className="cursor-pointer">
                                 View original statement evidence
                               </summary>
@@ -429,7 +448,7 @@ function BursarScreen() {
                         </div>
                       ))}
                       {invoice.payments.length === 0 && (
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-muted-foreground">
                           No payments have been applied to this invoice.
                         </p>
                       )}
@@ -440,15 +459,21 @@ function BursarScreen() {
             </Card>
           ) : (
             <Card>
-              <CardContent className="py-8 text-center text-sm text-slate-500">
-                Choose a family to see its invoice balances and payment
-                evidence.
+              <CardContent>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyTitle>Choose a family</EmptyTitle>
+                    <EmptyDescription>
+                      See invoice balances and the payment evidence behind them.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               </CardContent>
             </Card>
           )}
         </section>
 
-        <aside className="space-y-5" aria-label="Payment review">
+        <aside className="flex flex-col gap-5" aria-label="Payment review">
           <Card>
             <CardHeader>
               <CardTitle>
@@ -462,7 +487,7 @@ function BursarScreen() {
                 assigning a family.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               {actionableHolds.map((hold) => (
                 <HoldCard
                   key={`${hold.eventKey}:${hold.fingerprint}`}
@@ -480,7 +505,7 @@ function BursarScreen() {
                 />
               ))}
               {actionableHolds.length === 0 && (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   No payments need a family decision.
                 </p>
               )}
@@ -488,7 +513,7 @@ function BursarScreen() {
           </Card>
 
           {pendingHolds.length > 0 && (
-            <Card className="border-amber-300">
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle>Decision recorded; allocation pending</CardTitle>
                 <CardDescription>
@@ -496,7 +521,7 @@ function BursarScreen() {
                   safely.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="flex flex-col gap-3">
                 {pendingHolds.map((hold) => (
                   <div
                     key={hold.eventKey}
@@ -526,8 +551,8 @@ function BursarScreen() {
                   Assign only when the evidence supports the family.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg bg-slate-100 p-4 text-sm">
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-lg bg-muted p-4 text-sm">
                   <p className="font-medium">
                     {selectedHold.source === "mpesa"
                       ? "M-Pesa"
@@ -541,43 +566,44 @@ function BursarScreen() {
                       selectedHold.occurredAt ?? selectedHold.occurredOn ?? "",
                     )}
                   </p>
-                  <p className="mt-1 text-slate-600">
+                  <p className="mt-1 text-muted-foreground">
                     Reference received:{" "}
                     {selectedHold.paymentReference ?? "No reference supplied"}.
                     Held because: {humanize(selectedHold.holdReason)}.
                   </p>
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-slate-600">
+                    <summary className="cursor-pointer text-muted-foreground">
                       View original provider details
                     </summary>
                     <RawEvidence rows={selectedHold.raw} />
                   </details>
                 </div>
-                <label
-                  className="block space-y-1 text-sm font-medium"
-                  htmlFor="family-select"
-                >
-                  Family to assign
-                  <select
-                    id="family-select"
-                    className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 font-normal"
-                    value={resolutionFamilyId}
-                    onChange={(event) => {
-                      setResolutionFamilyId(event.target.value);
-                      setPreview(null);
-                    }}
-                  >
-                    <option value="">Choose a family</option>
-                    {families.map((family) => (
-                      <option key={family.familyId} value={family.familyId}>
-                        {family.familyReference} ·{" "}
-                        {family.learners
-                          .map((learner) => learner.first_name)
-                          .join(", ")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="family-select">
+                      Family to assign
+                    </FieldLabel>
+                    <select
+                      id="family-select"
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 font-normal"
+                      value={resolutionFamilyId}
+                      onChange={(event) => {
+                        setResolutionFamilyId(event.target.value);
+                        setPreview(null);
+                      }}
+                    >
+                      <option value="">Choose a family</option>
+                      {families.map((family) => (
+                        <option key={family.familyId} value={family.familyId}>
+                          {family.familyReference} ·{" "}
+                          {family.learners
+                            .map((learner) => learner.first_name)
+                            .join(", ")}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </FieldGroup>
                 <Button
                   disabled={!resolutionFamilyId || working}
                   onClick={() => void requestPreview()}
@@ -593,22 +619,23 @@ function BursarScreen() {
                   />
                 )}
                 {preview && (
-                  <label
-                    className="block space-y-1 text-sm font-medium"
-                    htmlFor="decision-reason"
-                  >
-                    Why does the evidence support this family?
-                    <Textarea
-                      id="decision-reason"
-                      maxLength={500}
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                      placeholder="For example: Parent confirmed transfer reference against learner admission record."
-                    />
-                    <span className="font-normal text-slate-500">
-                      Record the evidence you checked, not an assumption.
-                    </span>
-                  </label>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="decision-reason">
+                        Why does the evidence support this family?
+                      </FieldLabel>
+                      <Textarea
+                        id="decision-reason"
+                        maxLength={500}
+                        value={reason}
+                        onChange={(event) => setReason(event.target.value)}
+                        placeholder="For example: Parent confirmed transfer reference against learner admission record."
+                      />
+                      <FieldDescription>
+                        Record the evidence you checked, not an assumption.
+                      </FieldDescription>
+                    </Field>
+                  </FieldGroup>
                 )}
                 {preview && (
                   <Button
@@ -634,7 +661,7 @@ function BursarScreen() {
                   assignment is available here.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="flex flex-col gap-3">
                 {blockedHolds.map((hold) => (
                   <HoldCard
                     key={`${hold.eventKey}:${hold.fingerprint}`}
@@ -649,32 +676,39 @@ function BursarScreen() {
           )}
         </aside>
       </div>
-      <div className="mx-auto max-w-7xl space-y-2 px-5 pb-8" aria-live="polite">
+      <div
+        className="mx-auto max-w-7xl flex flex-col gap-2 px-5 pb-8"
+        aria-live="polite"
+      >
         {loading && (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             Loading family accounts and payment evidence…
           </p>
         )}
         {loadError && (
-          <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {loadError} Check setup instructions, then reload the page.
-          </p>
+          <Alert variant="destructive">
+            <AlertDescription>
+              {loadError} Check setup instructions, then reload the page.
+            </AlertDescription>
+          </Alert>
         )}
         {workspace?.eventCount === 0 && (
-          <p className="rounded-md bg-blue-50 p-3 text-sm text-blue-900">
-            No payments are loaded yet. Load the school configuration and
-            payment fixtures to populate this review screen.
-          </p>
+          <Alert>
+            <AlertDescription>
+              No payments are loaded yet. Load the school configuration and
+              payment fixtures to populate this review screen.
+            </AlertDescription>
+          </Alert>
         )}
         {message && (
-          <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-900">
-            {message}
-          </p>
+          <Alert>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
         )}
         {error && (
-          <p className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-            {error}
-          </p>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
       </div>
     </main>
@@ -694,7 +728,10 @@ function HoldCard({
 }) {
   return (
     <div
-      className={`rounded-lg border p-3 ${selected ? "border-blue-700 bg-blue-50" : ""}`}
+      className={cn(
+        "rounded-lg border p-3",
+        selected && "border-primary bg-accent",
+      )}
     >
       <button
         type="button"
@@ -705,7 +742,7 @@ function HoldCard({
         <span className="flex items-start justify-between gap-3">
           <span>
             <span className="block font-medium">{hold.sourceReference}</span>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-muted-foreground">
               {hold.paymentReference ?? "No payment reference"} ·{" "}
               {dateTime(hold.occurredAt ?? hold.occurredOn ?? "")}
             </span>
@@ -714,14 +751,14 @@ function HoldCard({
             {money(hold.netAmountMinor, hold.currency)}
           </Badge>
         </span>
-        <span className="mt-2 block text-sm text-slate-600">
+        <span className="mt-2 block text-sm text-muted-foreground">
           {blocked
             ? blockedFollowUp(hold.holdReason)
             : humanize(hold.holdReason)}
         </span>
       </button>
       {hold.raw.length > 0 && (
-        <details className="mt-2 text-sm text-slate-500">
+        <details className="mt-2 text-sm text-muted-foreground">
           <summary className="cursor-pointer">View source evidence</summary>
           <RawEvidence rows={hold.raw} />
         </details>
@@ -738,11 +775,11 @@ function AllocationPreview({
   currency: string;
 }) {
   return (
-    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm">
+    <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm">
       <h3 className="font-semibold">
         Allocation preview · policy v{preview.plan.policyVersion}
       </h3>
-      <ul className="mt-2 space-y-1">
+      <ul className="mt-2 flex flex-col gap-1">
         {preview.plan.allocations.map((allocation) => (
           <li key={allocation.invoiceId} className="flex justify-between gap-2">
             <span>{allocation.invoiceId}</span>
@@ -763,7 +800,7 @@ function AllocationPreview({
         preview.plan.remainderMinor === 0 && (
           <p className="mt-2">No invoice allocation is needed.</p>
         )}
-      <p className="mt-2 text-slate-600">
+      <p className="mt-2 text-muted-foreground">
         Confirming will record this family decision and apply these amounts.
       </p>
     </div>
@@ -773,7 +810,7 @@ function AllocationPreview({
 function Amount({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-slate-500">{label}</dt>
+      <dt className="text-muted-foreground">{label}</dt>
       <dd className="mt-1 font-semibold">{value}</dd>
     </div>
   );
@@ -781,11 +818,11 @@ function Amount({ label, value }: { label: string; value: string }) {
 
 function RawEvidence({ rows }: { rows: { file: string; data: string }[] }) {
   return (
-    <div className="mt-2 space-y-2">
+    <div className="mt-2 flex flex-col gap-2">
       {rows.map((row, index) => (
         <div key={`${row.file}-${index}`}>
           <p>{row.file}</p>
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-slate-100 p-2 text-xs">
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-xs">
             {row.data}
           </pre>
         </div>
