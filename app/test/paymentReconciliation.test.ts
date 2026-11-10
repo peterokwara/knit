@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, it } from "node:test";
@@ -125,8 +126,7 @@ function applyChange(): IApprovedPolicyChange {
   };
 }
 
-function setup() {
-  const database = new DatabaseSync(":memory:");
+function setup(database = new DatabaseSync(":memory:")) {
   initializeSchema(database, () => new DatabaseSync(":memory:"));
   const configurationStore = new SqliteSchoolConfigurationService(database);
   const configurations = new SchoolConfigurationService(configurationStore);
@@ -162,6 +162,55 @@ function setup() {
 }
 
 void describe("payment reconciliation", () => {
+  void it("reconstructs a late reversal and its evidence after reopening SQLite", () => {
+    const directory = mkdtempSync(path.join(tmpdir(), "knit-reversal-"));
+    const databasePath = path.join(directory, "school.sqlite");
+    let database = new DatabaseSync(databasePath);
+    try {
+      const { service } = setup(database);
+      const events = JSON.parse(
+        readFileSync(path.join(fixtureDirectory, "mpesa_events.json"), "utf8"),
+      ) as { payload: { TransID?: string } }[];
+      const payment = events.find(
+        (event) => event.payload.TransID === "SKD3XH2B02",
+      );
+      const reversal = events.find(
+        (event) => event.payload.TransID === "SKD3XR9Z07",
+      );
+      assert.ok(payment);
+      assert.ok(reversal);
+      const file = (event: unknown) => ({
+        fileName: "mpesa_events.json",
+        fileType: "mpesa-json" as const,
+        contents: JSON.stringify([event]),
+      });
+      service.processFiles([file(payment)], allocationAt);
+      service.processFiles([file(reversal)], allocationAt);
+      database.close();
+      database = new DatabaseSync(databasePath);
+      initializeSchema(database, () => new DatabaseSync(":memory:"));
+      const balances = new FamilyInvoiceBalanceService(
+        new SqlitePaymentAllocationPlanStore(database, invoices),
+      );
+      const family = balances.getFamilyBalances(
+        "sch_mlima",
+        "fam_202",
+        invoices.filter((invoice) => invoice.familyId === "fam_202"),
+      );
+      assert.equal(
+        family.reduce((sum, invoice) => sum + invoice.paidMinor, 0),
+        0,
+      );
+      assert.ok(
+        family
+          .flatMap((invoice) => invoice.allocations)
+          .some((line) => line.reversalReferences?.includes("SKD3XR9Z07")),
+      );
+    } finally {
+      database.close();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
   void it("preserves invoice balances across shuffled fixture rows, bank order, and three replays", () => {
     const files = new PaymentFileRetrievalService().retrieveFiles(
       fileReferences,
