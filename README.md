@@ -91,6 +91,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the working and commit conventions 
 
 ## Project material
 
+- [Solution and trade-offs](./SOLUTION.md) explains the implementation, fixture decisions, limitations, and AI use.
+- [Part B code review](./REVIEW.md) records the review findings and requested changes.
 - [Problem-solving notes](./docs/NOTES.md) cover stakeholders, risks, fixture observations, and proposed priorities.
 - [Payment journey](./docs/visuals/payment-journey.md) diagrams ingestion, matching, review, allocation, and reversals.
 - [Visuals](./docs/visuals/) contain the problem-framing diagrams and their drawing source.
