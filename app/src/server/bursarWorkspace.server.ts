@@ -110,6 +110,11 @@ export function getBursarWorkspace() {
                 event?.occurredOn ??
                 allocation.effectiveAt,
               amountMinor: allocation.amountMinor,
+              originalAmountMinor: allocation.originalAmountMinor ?? null,
+              reversedMinor: allocation.reversedMinor ?? 0,
+              reversalReferences: allocation.reversalReferences ?? [],
+              reallocatedAfterReversal:
+                allocation.reallocatedAfterReversal ?? false,
               policyVersion: allocation.policyVersion,
               decision: decisionsByPayment.get(allocation.paymentId) ?? null,
               raw:
@@ -242,7 +247,7 @@ function withServices<T>(
 ): T {
   const database: DatabaseSync = SqliteHelper.openConnection();
   try {
-    const planStore = new SqlitePaymentAllocationPlanStore(database);
+    const planStore = new SqlitePaymentAllocationPlanStore(database, invoices);
     const configurations = new SchoolConfigurationService(
       new SqliteSchoolConfigurationService(database),
     );

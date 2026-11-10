@@ -143,7 +143,7 @@ function createServices(database: DatabaseSync) {
   if (!configurationStore.getVersion(changeRequest.school_id, 2))
     configurations.applyChange(applyChange());
 
-  const planStore = new SqlitePaymentAllocationPlanStore(database);
+  const planStore = new SqlitePaymentAllocationPlanStore(database, invoices);
   const resolutionStore = new SqlitePaymentReviewResolutionStore(database);
   const ingestion = new PaymentIngestionService(
     new SqlitePaymentIngestionService(database),

@@ -6,6 +6,7 @@ import type { IPaymentAllocationPlanStore } from "../models/allocation/IPaymentA
 import { SqliteHelper } from "../utils/sqliteHelper";
 import { readInteger, readText } from "../utils/sqliteValues";
 import type { DatabaseSync } from "node:sqlite";
+import { SqlitePaymentIngestionService } from "./sqlitePaymentIngestionService";
 
 function toEvidence(row: IDatabaseRow): IAllocationEvidence {
   return {
@@ -25,12 +26,17 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
   /** Database connection that owns the protected allocation schema. */
   private readonly _database: DatabaseSync;
 
+  /** Current school invoice records used to calculate reversal corrections. */
+  private readonly _invoices: IAllocationInvoice[];
+
   /**
    * Create the plan store around an initialized SQLite connection.
    * @param database Connection containing configuration and allocation tables.
+   * @param invoices School invoice records used for reversal corrections.
    */
-  constructor(database: DatabaseSync) {
+  constructor(database: DatabaseSync, invoices: IAllocationInvoice[]) {
     this._database = database;
+    this._invoices = invoices;
   }
 
   /**
@@ -82,6 +88,21 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
    * @returns Total allocated minor units.
    */
   getAllocatedAmount(schoolId: string, invoiceId: string): number {
+    const invoice = this._invoices.find(
+      (item) => item.schoolId === schoolId && item.invoiceId === invoiceId,
+    );
+    if (!invoice)
+      throw new Error(
+        `Invoice ${invoiceId} is missing from the allocation context`,
+      );
+    const projected = this.reallocationAfterReversal(
+      schoolId,
+      invoice.familyId,
+    );
+    if (projected)
+      return projected
+        .filter((item) => item.invoiceId === invoiceId)
+        .reduce((sum, item) => sum + item.amountMinor, 0);
     const row = SqliteHelper.queryOne(
       this._database,
       "SELECT COALESCE(SUM(amount_minor), 0) AS amount_minor FROM allocation_evidence WHERE school_id = ? AND invoice_id = ?",
@@ -121,7 +142,10 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
       throw new Error(
         "Invoice allocation evidence is missing its family plan or belongs to another family; its balance cannot be attributed safely",
       );
-    return SqliteHelper.query(
+    const projected = this.reallocationAfterReversal(schoolId, familyId);
+    if (projected)
+      return projected.filter((item) => invoiceIds.includes(item.invoiceId));
+    const rows = SqliteHelper.query(
       this._database,
       `SELECT evidence.* FROM allocation_evidence evidence
       JOIN payment_allocation_plans plan
@@ -132,6 +156,164 @@ export class SqlitePaymentAllocationPlanStore implements IPaymentAllocationPlanS
       familyId,
       ...invoiceIds,
     ).map(toEvidence);
+    return rows;
+  }
+
+  /**
+   * Recalculate affected family allocations under each saved policy after a reversal.
+   * Original plans remain immutable and changed lines identify their reversal evidence.
+   * @param schoolId School that owns the payments.
+   * @param familyId Family whose payments may need correction.
+   * @returns Corrected allocation evidence, or undefined when no correction is needed.
+   */
+  private reallocationAfterReversal(
+    schoolId: string,
+    familyId: string,
+  ): IAllocationEvidence[] | undefined {
+    const rows = SqliteHelper.query(
+      this._database,
+      "SELECT payment_id FROM payment_allocation_plans WHERE school_id = ? AND family_id = ? ORDER BY effective_at_ms, payment_id",
+      schoolId,
+      familyId,
+    );
+    const plans = rows
+      .map((row) => this.getPlan(schoolId, readText(row, "payment_id")))
+      .filter((plan): plan is IPaymentAllocationPlan => plan !== undefined);
+    if (plans.length === 0) return undefined;
+    const events = new SqlitePaymentIngestionService(this._database).getEvents(
+      schoolId,
+    );
+    const eventFor = (plan: IPaymentAllocationPlan) =>
+      events.find(
+        (event) =>
+          event.eventKey === plan.paymentId &&
+          event.fingerprint === plan.fingerprint,
+      );
+    for (const plan of plans) {
+      const event = eventFor(plan);
+      if (event?.conflicted || event?.reversalStatus === "conflicted")
+        throw new Error(
+          `Payment ${plan.paymentId} has conflicting evidence; its balance needs review`,
+        );
+    }
+    const affected = plans.filter((plan) => {
+      const event = eventFor(plan);
+      return event && event.netAmountMinor < plan.amountMinor;
+    });
+    if (affected.length === 0) return undefined;
+    const invoices = this._invoices.filter(
+      (invoice) =>
+        invoice.schoolId === schoolId && invoice.familyId === familyId,
+    );
+    if (invoices.length === 0)
+      throw new Error(
+        `Invoice records are needed to correct reversed payments for ${familyId}`,
+      );
+    const references = affected.flatMap((plan) => {
+      const event = eventFor(plan)!;
+      return events
+        .filter(
+          (item) =>
+            item.classification === "reversal" &&
+            item.source === event.source &&
+            item.relatedReference === event.sourceReference &&
+            item.reversalStatus === "matched",
+        )
+        .map((item) => item.sourceReference);
+    });
+    const paid = new Map(invoices.map((invoice) => [invoice.invoiceId, 0]));
+    const result: IAllocationEvidence[] = [];
+    for (const plan of plans) {
+      const configRow = SqliteHelper.queryOne(
+        this._database,
+        "SELECT configuration_json FROM school_configuration_versions WHERE school_id = ? AND version = ?",
+        schoolId,
+        plan.policyVersion,
+      );
+      if (!configRow) throw new Error("Allocation policy version is missing");
+      const config = JSON.parse(readText(configRow, "configuration_json")) as {
+        allocation: { category_priority: string[]; tie_break: string[] };
+      };
+      const policy = config.allocation;
+      if (
+        invoices.some(
+          (invoice) =>
+            !policy.category_priority.includes(invoice.category) ||
+            invoice.currency !== plan.currency,
+        ) ||
+        policy.tie_break.some(
+          (rule) => rule !== "due_on_asc" && rule !== "invoice_id_asc",
+        )
+      )
+        throw new Error(
+          `Invoices cannot be corrected under policy v${plan.policyVersion}`,
+        );
+      const ordered = [...invoices].sort((a, b) => {
+        const difference =
+          policy.category_priority.indexOf(a.category) -
+          policy.category_priority.indexOf(b.category);
+        if (difference) return difference;
+        for (const rule of policy.tie_break) {
+          if (rule === "due_on_asc" && a.dueOn !== b.dueOn)
+            return a.dueOn.localeCompare(b.dueOn);
+          if (rule === "invoice_id_asc" && a.invoiceId !== b.invoiceId)
+            return a.invoiceId.localeCompare(b.invoiceId);
+        }
+        return 0;
+      });
+      const event = eventFor(plan);
+      let remaining = Math.min(
+        plan.amountMinor,
+        event?.netAmountMinor ?? plan.amountMinor,
+      );
+      const amounts = new Map<string, number>();
+      for (const invoice of ordered) {
+        const amount = Math.min(
+          remaining,
+          invoice.amountMinor - paid.get(invoice.invoiceId)!,
+        );
+        if (amount > 0) {
+          amounts.set(invoice.invoiceId, amount);
+          paid.set(invoice.invoiceId, paid.get(invoice.invoiceId)! + amount);
+          remaining -= amount;
+        }
+      }
+      const invoiceIds = new Set([
+        ...plan.allocations.map((line) => line.invoiceId),
+        ...amounts.keys(),
+      ]);
+      for (const invoiceId of invoiceIds) {
+        const original = plan.allocations.find(
+          (line) => line.invoiceId === invoiceId,
+        );
+        const amountMinor = amounts.get(invoiceId) ?? 0;
+        const originalAmount = original?.amountMinor ?? 0;
+        const changed = amountMinor !== originalAmount;
+        result.push({
+          id:
+            original?.id ??
+            `correction:${schoolId}:${plan.paymentId}:${invoiceId}`,
+          schoolId,
+          paymentId: plan.paymentId,
+          invoiceId,
+          source: plan.source,
+          amountMinor,
+          effectiveAt: plan.effectiveAt,
+          policyVersion: plan.policyVersion,
+          ...(changed
+            ? {
+                originalAmountMinor: originalAmount,
+                reversedMinor: affected.includes(plan)
+                  ? Math.max(0, originalAmount - amountMinor)
+                  : 0,
+                reversalReferences: references,
+                reallocatedAfterReversal: true,
+              }
+            : {}),
+        });
+      }
+    }
+    return result;
   }
 
   /**

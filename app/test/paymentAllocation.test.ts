@@ -115,7 +115,7 @@ function setup() {
       configuration: row.config,
     });
   }
-  const planStore = new SqlitePaymentAllocationPlanStore(database);
+  const planStore = new SqlitePaymentAllocationPlanStore(database, invoices);
   return {
     database,
     configurations,

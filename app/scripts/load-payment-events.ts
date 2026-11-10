@@ -93,7 +93,7 @@ const fileReferences: IPaymentFileReference[] = [
 
 const database = SqliteHelper.openConnection();
 try {
-  const planStore = new SqlitePaymentAllocationPlanStore(database);
+  const planStore = new SqlitePaymentAllocationPlanStore(database, invoices);
   const configurations = new SchoolConfigurationService(
     new SqliteSchoolConfigurationService(database),
   );

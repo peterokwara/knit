@@ -51,6 +51,10 @@ interface IWorkspace {
         reference: string;
         date: string;
         amountMinor: number;
+        originalAmountMinor: number | null;
+        reversedMinor: number;
+        reversalReferences: string[];
+        reallocatedAfterReversal: boolean;
         policyVersion: number;
         decision: {
           actorId: string;
@@ -430,6 +434,20 @@ function BursarScreen() {
                             {dateTime(payment.date)} · policy v
                             {payment.policyVersion}
                           </p>
+                          {payment.reallocatedAfterReversal && (
+                            <p className="mt-1 text-muted-foreground">
+                              Originally applied{" "}
+                              {money(
+                                payment.originalAmountMinor ?? 0,
+                                invoice.currency,
+                              )}
+                              ; recalculated to{" "}
+                              {money(payment.amountMinor, invoice.currency)}{" "}
+                              after reversal{" "}
+                              {payment.reversalReferences.join(", ")}, using
+                              policy v{payment.policyVersion}.
+                            </p>
+                          )}
                           {payment.decision && (
                             <p className="mt-1 text-muted-foreground">
                               Family decision by Assessment demo bursar on{" "}

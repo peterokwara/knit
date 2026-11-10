@@ -141,7 +141,7 @@ function setup() {
   }
   configurations.applyChange(applyChange());
 
-  const planStore = new SqlitePaymentAllocationPlanStore(database);
+  const planStore = new SqlitePaymentAllocationPlanStore(database, invoices);
   const service = new PaymentReconciliationService(
     new PaymentIngestionService(new SqlitePaymentIngestionService(database), {
       schoolId: schoolFixture.school.school_id,
@@ -158,10 +158,241 @@ function setup() {
     { matching: matchingContext, invoices },
     new SqlitePaymentReviewResolutionStore(database),
   );
-  return { database, service };
+  return { database, service, planStore };
 }
 
 void describe("payment reconciliation", () => {
+  void it("preserves invoice balances across shuffled fixture rows, bank order, and three replays", () => {
+    const files = new PaymentFileRetrievalService().retrieveFiles(
+      fileReferences,
+    );
+    const shuffled = [...files].reverse().map((file) => {
+      if (file.fileType === "mpesa-json") {
+        const events = JSON.parse(file.contents) as unknown[];
+        return { ...file, contents: JSON.stringify(events.reverse()) };
+      }
+      const [header, ...rows] = file.contents.trim().split(/\r?\n/);
+      return { ...file, contents: [header, ...rows.reverse()].join("\n") };
+    });
+    const balances = (order: typeof files) => {
+      const { database, service } = setup();
+      try {
+        let result = service.processFiles(order, allocationAt);
+        for (let index = 0; index < 3; index++)
+          result = service.processFiles(order, allocationAt);
+        return result.familyBalances.map((family) => ({
+          familyId: family.familyId,
+          invoices: family.invoices.map(
+            ({ invoiceId, paidMinor, balanceMinor }) => ({
+              invoiceId,
+              paidMinor,
+              balanceMinor,
+            }),
+          ),
+        }));
+      } finally {
+        database.close();
+      }
+    };
+    assert.deepEqual(balances(shuffled), balances(files));
+  });
+  void it("applies the remaining payment to policy priorities after an earlier payment is reversed", () => {
+    const { database, service, planStore } = setup();
+    try {
+      const events = JSON.parse(
+        readFileSync(path.join(fixtureDirectory, "mpesa_events.json"), "utf8"),
+      ) as { payload: { TransID?: string } }[];
+      const payment = events.find(
+        (event) => event.payload.TransID === "SKD3XH2B02",
+      );
+      const reversal = events.find(
+        (event) => event.payload.TransID === "SKD3XR9Z07",
+      );
+      assert.ok(payment);
+      assert.ok(reversal);
+      const eventFile = (event: unknown) => ({
+        fileName: "mpesa_events.json",
+        fileType: "mpesa-json" as const,
+        contents: JSON.stringify([event]),
+      });
+      const csv = readFileSync(
+        path.join(fixtureDirectory, "bank/export_2026-11-04.csv"),
+        "utf8",
+      )
+        .trim()
+        .split(/\r?\n/);
+      const bankRow = csv.find((row) => row.includes("FT26308LMN90"));
+      assert.ok(bankRow);
+      service.processFiles([eventFile(payment)], "2026-11-03T11:59:59+03:00");
+      const savedOriginalPlan = planStore.getPlan(
+        "sch_mlima",
+        "mpesa:c2b:SKD3XH2B02",
+      );
+      assert.equal(savedOriginalPlan?.policyVersion, 1);
+      service.processFiles(
+        [
+          {
+            fileName: "export_2026-11-04.csv",
+            fileType: "bank-csv",
+            contents: `${csv[0]}\n${bankRow}\n`,
+          },
+        ],
+        allocationAt,
+      );
+      const savedBankPlan = planStore.getPlan(
+        "sch_mlima",
+        "bank:0110234567:FT26308LMN90",
+      );
+      assert.ok(savedBankPlan);
+      const result = service.processFiles([eventFile(reversal)], allocationAt);
+      const family = result.familyBalances.find(
+        (item) => item.familyId === "fam_202",
+      );
+      assert.deepEqual(
+        family?.invoices.map((invoice) => [
+          invoice.invoiceId,
+          invoice.paidMinor,
+        ]),
+        [
+          ["INV-2003", 1_400_000],
+          ["INV-2004", 0],
+          ["INV-2005", 600_000],
+        ],
+      );
+      assert.deepEqual(
+        planStore.getPlan("sch_mlima", "bank:0110234567:FT26308LMN90"),
+        savedBankPlan,
+      );
+      assert.deepEqual(
+        planStore.getPlan("sch_mlima", "mpesa:c2b:SKD3XH2B02"),
+        savedOriginalPlan,
+      );
+      const tuition = family?.invoices.find(
+        (invoice) => invoice.invoiceId === "INV-2003",
+      );
+      const corrected = tuition?.allocations.find(
+        (line) => line.paymentId === "bank:0110234567:FT26308LMN90",
+      );
+      assert.equal(corrected?.amountMinor, 1_400_000);
+      assert.equal(corrected?.reallocatedAfterReversal, true);
+      assert.deepEqual(corrected?.reversalReferences, ["SKD3XR9Z07"]);
+      assert.equal(corrected?.policyVersion, 2);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const replay = service.processFiles(
+          [eventFile(reversal)],
+          allocationAt,
+        );
+        const replayedFamily = replay.familyBalances.find(
+          (item) => item.familyId === "fam_202",
+        );
+        assert.deepEqual(replayedFamily?.invoices, family?.invoices);
+      }
+    } finally {
+      database.close();
+    }
+  });
+  void it("restores invoice balances when a full reversal arrives after allocation", () => {
+    const { database, service } = setup();
+    try {
+      const events = JSON.parse(
+        readFileSync(path.join(fixtureDirectory, "mpesa_events.json"), "utf8"),
+      ) as { event: string; payload: { TransID?: string } }[];
+      const payment = events.find(
+        (event) => event.payload.TransID === "SKD3XH2B02",
+      );
+      const reversal = events.find(
+        (event) => event.payload.TransID === "SKD3XR9Z07",
+      );
+      assert.ok(payment);
+      assert.ok(reversal);
+      const file = (event: unknown) => ({
+        fileName: "mpesa_events.json",
+        fileType: "mpesa-json" as const,
+        contents: JSON.stringify([event]),
+      });
+      const first = service.processFiles([file(payment)], allocationAt);
+      const family = first.familyBalances.find(
+        (item) => item.familyId === "fam_202",
+      );
+      assert.equal(
+        family?.invoices.reduce((sum, invoice) => sum + invoice.paidMinor, 0),
+        7_000_000,
+      );
+      const reversed = service.processFiles([file(reversal)], allocationAt);
+      const after = reversed.familyBalances.find(
+        (item) => item.familyId === "fam_202",
+      );
+      assert.equal(
+        after?.invoices.reduce((sum, invoice) => sum + invoice.paidMinor, 0),
+        0,
+      );
+    } finally {
+      database.close();
+    }
+  });
+
+  void it("keeps balances correct when a partial reversal arrives before or after its payment", () => {
+    const events = JSON.parse(
+      readFileSync(path.join(fixtureDirectory, "mpesa_events.json"), "utf8"),
+    ) as {
+      event: string;
+      payload: { TransID?: string; TransAmount?: string };
+    }[];
+    const payment = events.find(
+      (event) => event.payload.TransID === "SKD3XH2B02",
+    );
+    const originalReversal = events.find(
+      (event) => event.payload.TransID === "SKD3XR9Z07",
+    );
+    assert.ok(payment);
+    assert.ok(originalReversal);
+    const reversal = {
+      ...originalReversal,
+      payload: { ...originalReversal.payload, TransAmount: "20000.00" },
+    };
+    const file = (event: unknown) => ({
+      fileName: "mpesa_events.json",
+      fileType: "mpesa-json" as const,
+      contents: JSON.stringify([event]),
+    });
+    for (const ordered of [
+      [payment, reversal],
+      [reversal, payment],
+    ]) {
+      const { database, service } = setup();
+      try {
+        for (const event of ordered)
+          service.processFiles([file(event)], allocationAt);
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const result = service.processFiles(ordered.map(file), allocationAt);
+          const family = result.familyBalances.find(
+            (item) => item.familyId === "fam_202",
+          );
+          assert.equal(
+            family?.invoices.reduce(
+              (sum, invoice) => sum + invoice.paidMinor,
+              0,
+            ),
+            5_000_000,
+          );
+          assert.deepEqual(
+            family?.invoices.map((invoice) => [
+              invoice.invoiceId,
+              invoice.paidMinor,
+            ]),
+            [
+              ["INV-2003", 4_400_000],
+              ["INV-2004", 0],
+              ["INV-2005", 600_000],
+            ],
+          );
+        }
+      } finally {
+        database.close();
+      }
+    }
+  });
+
   void it("allocates supplied fixtures and returns stable explained family balances on replay", () => {
     const { database, service } = setup();
     try {

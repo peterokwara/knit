@@ -28,7 +28,7 @@ export interface IAllocationInput {
   source: string;
 
   /**
-   * The positive allocation amount in minor currency units.
+   * Allocation amount in minor currency units; an effective reversed line can be zero.
    */
   amountMinor: number;
 

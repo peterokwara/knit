@@ -264,7 +264,12 @@ export class PaymentAllocationService {
       plan.fingerprint !== event.fingerprint ||
       plan.familyId !== match.familyId ||
       plan.source !== event.source ||
-      plan.amountMinor !== event.netAmountMinor ||
+      (plan.amountMinor !== event.netAmountMinor &&
+        !(
+          event.reversalStatus === "matched" &&
+          event.netAmountMinor < plan.amountMinor &&
+          plan.amountMinor <= event.amountMinor
+        )) ||
       plan.currency !== event.currency
     ) {
       throw new Error(
