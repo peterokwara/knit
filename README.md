@@ -70,6 +70,8 @@ pnpm test
 
 The lint command checks code and JSDoc comments. The build generates the TanStack route tree. TypeScript's `strict` setting is enabled in `app/tsconfig.json`. See [CONTRIBUTING.md](./CONTRIBUTING.md#jsdoc-comments) for the documentation convention.
 
+To demonstrate configuration protection in the walkthrough, run `pnpm exec tsx --test test/schoolConfiguration.test.ts` from `app/`. In the test named **“prevents direct updates, deletes and a default-reset upsert for both schools”**, the supplied platform defaults are used in attempted overwrites; the test expects SQLite to reject each attempt and verifies both original configurations remain intact. The next test attempts to insert defaults as an unapproved new version.
+
 ## Project folders
 
 - `app/src/routes/` contains the bursar screen and server routes.

@@ -1,10 +1,12 @@
-# Solution notes (draft)
+# Solution
 
 ## Design and trade-offs
 
 The exercise uses TanStack Start, TypeScript in strict mode, and SQLite. TanStack Start supplies the React screen and server routes in one project. SQLite provides transactions, constraints, and triggers without a separate database server. The fixture loader is the provider boundary; no live provider or authentication integration is included.
 
 Provider records and raw observations are retained separately from family matching. Stable provider transaction identities deduplicate retries and overlapping exports. The matcher accepts only an exact family or admission reference, ignoring case and surrounding whitespace; uncertain references remain for a bursar decision. Money is stored in integer minor units. Allocations retain the source, invoice, effective time, and configuration version. Existing school configurations and allocation plans are append-only; SQLite guards and tests reject ordinary attempts to reset configuration to defaults.
+
+The configuration safety demonstration is in `app/test/schoolConfiguration.test.ts`: it attempts direct updates, deletes, replacement inserts, and an upsert using the supplied platform defaults for both schools, then verifies that their configurations remain unchanged. The guards also check for missing or altered protection triggers at startup. They do not protect against someone with unrestricted control of the SQLite file or schema.
 
 Allocation uses the trusted server time at which a plan is made, not the time printed by the provider. CR-118 applies at noon Nairobi time on 3 November. A replay returns the original plan and policy version. This makes the boundary explicit, but it means a late-arriving payment can receive the policy current when it is allocated rather than the policy current when a parent sent it.
 
@@ -31,12 +33,10 @@ There is no live provider adapter, authentication, deployment pipeline, or gener
 
 At 40 schools, the first likely operational pressure is reconciliation throughput and isolation: SQLite serializes writes, and this prototype reads and processes all events for a school. Provider backlogs, repeated full scans, and school-specific failures could delay other work. Measure backlog age and reconciliation latency; consider a transactional server database, indexed incremental processing, and per-school work queues while keeping idempotency and configuration protections.
 
-## AI use — confirm before submission
+## AI use
 
-The conversation and history provide these candidate rewrites; Peter should confirm the personal account before submission:
+1. The AI proposed injected SQLite connection interfaces. I asked to organize the backend around models, services, and utilities and preferred a concrete SQLite helper. This was a readability and substitution trade-off, not proof that an interface was incorrect. Commits `63a7cca0` and `f03dd339` contain the changes; configuration tests exercise the resulting helper and protections.
+2. File retrieval was embedded in the fixture-loading script. I asked to separate obtaining files from adapting provider formats, so each responsibility can change independently. Commit `7017127c` adds the retrieval service and a test that retrieves files before importing and reading events.
+3. During review of the AI-assisted reconciliation, we identified that events arriving out of order could leave a fully reversed KES 70,000 payment on invoices. A regression test reproduced it. Commit `237de749` changes the balance calculation; tests cover late reversals, an intervening payment, and the original policy versions.
 
-1. A proposed database abstraction wrapped SQLite in injected connection interfaces. We compared the style and trade-offs, then chose the concrete SQLite helper; `f03dd339` contains the rewrite. The configuration and payment tests checked the resulting behavior.
-2. Retrieval and source adaptation had been coupled. We separated file retrieval from provider-format conversion for distinct responsibilities; `7017127c` adds the retrieval service and a public ingestion test.
-3. The earlier AI-built reconciliation left a fully reversed payment on invoices when the reversal arrived later. We reproduced the KES 70,000 discrepancy through the public reconciliation service and revised the balance projection in `237de749`; tests cover the late reversal and an intervening payment. Confirm whether this is a consequential AI rewrite to include.
-
-AI assisted with TypeScript, React, TanStack Start, SQLite, shadcn/ui, test design, and review. We checked generated code against the brief and fixtures, used typechecking, lint, tests, build, and inspected the running screen. This draft should be updated with Peter's specific lookups, what he accepted or rejected, and how he checked them; do not present those details as confirmed until he has reviewed them.
+I leaned on AI for TypeScript and React implementation, including TanStack Start routes and shadcn/ui composition. I checked the result against the brief and fixtures, TypeScript's strict typechecker, lint, the test suite, a production build, and the running bursar screen.
